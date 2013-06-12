@@ -1,0 +1,8 @@
+These are some small programs used to test the cu40mmxs plugin.
+
+gauss: sends a simulated gaussian spot.
+
+cu40mmxstest: sends randomly generated background counts
+
+sensor-sciences-simulator: sends a pattern to test bit positions.
+
