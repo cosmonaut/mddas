@@ -407,9 +407,11 @@ void MainWindow::setPlugin(const QString &pluginStr) {
         
         QString test;
         //sti->getPlotConfig();
-        MDDASPlotConfig temppc = *(sti->getPlotConfig());
-        _pc->setXMax(temppc.getXMax());
-        _pc->setYMax(temppc.getYMax());
+        //MDDASPlotConfig temppc = *(sti->getPlotConfig());
+        *_pc = *(sti->getPlotConfig());
+        // _pc->setXMax(temppc.getXMax());
+        // _pc->setYMax(temppc.getYMax());
+        // _pc->setPMax(temppc.getPMax());
         configurePlots();
 
         test.setNum(_pc->getXMax());
