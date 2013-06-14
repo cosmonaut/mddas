@@ -5,6 +5,7 @@
 #include "mddasdatapoint.h"
 #include "specmonbox.h"
 #include "specbox.h"
+#include "histbox.h"
 #include "mainwindow.h"
 #include "eye.xpm"
 #include "xicon.xpm"
@@ -28,9 +29,9 @@ MainWindow::MainWindow() {
 
     /* Configuration for the plots */
     _pc = new MDDASPlotConfig();
-    _pc->getXMax();
+    //_pc->getXMax();
 
-    QWidget *widget = new QWidget;
+    QWidget *widget = new QWidget(this);
     setCentralWidget(widget);
 
     /* List of plugins */
@@ -43,6 +44,9 @@ MainWindow::MainWindow() {
     /* Holds and controls the spectrogram widget */
     _spec = new SpecBox(this);
     _spec->setVisible(false);
+
+    _hist = new HistBox(this);
+    _hist->setVisible(false);
 
     /* Timer for reading data from the sampling thread */
     _acqTimer = new QTimer(this);
@@ -78,6 +82,7 @@ MainWindow::MainWindow() {
     QHBoxLayout *hbox = new QHBoxLayout();
     hbox->addWidget(_specMon);
     hbox->addWidget(_spec);
+    hbox->addWidget(_hist);
     hbox->addWidget(sideFiller);
 
     QVBoxLayout *layout = new QVBoxLayout;
@@ -103,6 +108,7 @@ MainWindow::MainWindow() {
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ) );
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ) );
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ) );
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ) );
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ) );
     connect(_acqTimer, SIGNAL( timeout() ), this, SLOT( appendData() ) );
     connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ) );
@@ -159,6 +165,11 @@ void MainWindow::appendData() {
             if (_spec->isVisible()) {
                 _spec->append(v);
             }
+
+            if (_hist->isVisible()) {
+                _hist->append(v);
+            }
+
         }
     }
 }
@@ -180,6 +191,7 @@ void MainWindow::dispCountRate() {
 void MainWindow::clearPlots() {
     _specMon->clear();
     _spec->clear();
+    _hist->clear();
 }
 
 /* Start or pause the sampling thread */
@@ -268,6 +280,7 @@ QToolBar *MainWindow::plotToolBar() {
     
     connect(_specMonAction, SIGNAL( toggled(bool) ), _specMon, SLOT( setVisible(bool) ));
     connect(_specAction, SIGNAL( toggled(bool) ), _spec, SLOT( setVisible(bool) ));
+    connect(_histAction, SIGNAL( toggled(bool) ), _hist, SLOT( setVisible(bool) ));
 
     return _plottb;
 }
@@ -405,19 +418,16 @@ void MainWindow::setPlugin(const QString &pluginStr) {
         
         _acqtb->setEnabled(true);
         
-        QString test;
+        //QString test;
         //sti->getPlotConfig();
         //MDDASPlotConfig temppc = *(sti->getPlotConfig());
         *_pc = *(sti->getPlotConfig());
-        // _pc->setXMax(temppc.getXMax());
-        // _pc->setYMax(temppc.getYMax());
-        // _pc->setPMax(temppc.getPMax());
         configurePlots();
 
-        test.setNum(_pc->getXMax());
-        qDebug() << "mainwin xmax: " << test;
-        test.setNum(_pc->getYMax());
-        qDebug() << "mainwin ymax: " << test;
+        //test.setNum(_pc->getXMax());
+        //qDebug() << "mainwin xmax: " << test;
+        //test.setNum(_pc->getYMax());
+        //qDebug() << "mainwin ymax: " << test;
 
         sti->sample();
         
@@ -439,4 +449,5 @@ void MainWindow::setPlugin(const QString &pluginStr) {
 void MainWindow::configurePlots() {
     _specMon->configure(*_pc);
     _spec->configure(*_pc);
+    _hist->configure(*_pc);
 }

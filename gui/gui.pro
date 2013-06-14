@@ -17,6 +17,9 @@ HEADERS       = colormaps.h \
                 mddasdatainterface.h \
                 mddasdatapoint.h \
                 mddasplotconfig.h \ 
+                numberbutton.h \
+                histbox.h \
+                incrementalhistplot.h \
                 samplingthreadinterface.h \
                 scrollbar.h \
                 scrollzoomer.h \
@@ -33,6 +36,9 @@ SOURCES       = mainwindow.cpp \
                 mddasdatainterface.cpp \
                 mddasdatapoint.cpp \
                 mddasplotconfig.cpp \ 
+                numberbutton.cpp \
+                histbox.cpp \
+                incrementalhistplot.cpp \
                 scrollbar.cpp \
                 scrollzoomer.cpp \
                 specbox.cpp \

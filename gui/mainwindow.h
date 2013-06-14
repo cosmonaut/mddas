@@ -15,6 +15,7 @@ QT_END_NAMESPACE
 class MyToolBar;
 class SpecMonBox;
 class SpecBox;
+class HistBox;
 class MDDASPlotConfig;
 class SamplingThreadInterface;
 
@@ -77,6 +78,7 @@ private:
     /* Plot Widgets */
     SpecMonBox *_specMon;
     SpecBox *_spec;
+    HistBox *_hist;
 
     QTimer *_acqTimer;
     QTimer *_rateTimer;
