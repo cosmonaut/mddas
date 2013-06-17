@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <stdint.h>
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -18,6 +19,8 @@ class SpecBox;
 class HistBox;
 class MDDASPlotConfig;
 class SamplingThreadInterface;
+class StatusNumber;
+class NumberButton;
 
 class MainWindow : public QMainWindow
 {
@@ -85,6 +88,14 @@ private:
     QTimer *_acqTimer;
     QTimer *_rateTimer;
 
+    StatusNumber *_countRateDisp;
+    StatusNumber *_totalCountsDisp;
+    StatusNumber *_timeLeftDisp;
+    NumberButton *_expTimeDisp;
+    NumberButton *_expCountsDisp;
+
+
+    uint64_t _totalCounts;
     int _count;
     int _rcount;
     int _avgcount;

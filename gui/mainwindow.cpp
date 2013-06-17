@@ -6,6 +6,7 @@
 #include "specmonbox.h"
 #include "specbox.h"
 #include "histbox.h"
+#include "numberbutton.h"
 #include "mainwindow.h"
 #include "eye.xpm"
 #include "xicon.xpm"
@@ -31,6 +32,7 @@ public:
         QWidget(parent)
     {
         QHBoxLayout *layout = new QHBoxLayout(this);
+        layout->setContentsMargins(QMargins(0,0,0,0));
 
         if (!prefix.isEmpty()) {
             label = new QLabel(prefix + " ", this);
@@ -193,6 +195,7 @@ void MainWindow::appendData() {
         for (int i = 0; i < n; i++) {
             QVector<MDDASDataPoint> v = sti->bufDequeue();
             _count += v.size();
+            _totalCounts += v.size();
             // db.setNum(count);
             // infoLabel->setText(db);
             if (_specMon->isVisible()) {
@@ -216,8 +219,10 @@ void MainWindow::dispCountRate() {
     _avgcount += _count*10;
     _rcount += 1;
     _count = 0;
+    _totalCountsDisp->setNum(_totalCounts);
     if (_rcount > 9) {
         _infoLabel->setNum((double)_avgcount/10.0);
+        _countRateDisp->setNum((double)_avgcount/10.0);
         _count = 0;
         _rcount = 0;
         _avgcount = 0;
@@ -226,9 +231,18 @@ void MainWindow::dispCountRate() {
 
 /* Clear all plot widgets */
 void MainWindow::clearPlots() {
+    /* clear plots */
     _specMon->clear();
     _spec->clear();
     _hist->clear();
+
+    /* Clear count rate and total counts info */
+    _totalCountsDisp->setNum(0);
+    _totalCounts = 0;
+    _count = 0;
+    _rcount = 0;
+    _avgcount = 0;
+    _countRateDisp->setNum(0);
 }
 
 /* Start or pause the sampling thread */
@@ -328,11 +342,49 @@ QToolBar *MainWindow::statToolBar() {
     _stattb->setAllowedAreas(Qt::BottomToolBarArea);
     _stattb->setMovable(false);
     _stattb->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    _stattb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QGroupBox *acqGroup = new QGroupBox(_stattb);
+    acqGroup->setTitle("Acquisition");
+
+    QVBoxLayout *acqLayout = new QVBoxLayout(acqGroup);
+    //acqLayout->setContentsMargins(QMargins(0,0,0,0));
+    
+    _countRateDisp = new StatusNumber(_stattb, "count rate:", 0.0);
+    _totalCountsDisp = new StatusNumber(_stattb, "total counts:", 0.0);
+    _timeLeftDisp = new StatusNumber(_stattb, "time left:", 0.0);
+
+    acqLayout->addWidget(_countRateDisp);
+    acqLayout->addWidget(_totalCountsDisp);
+    acqLayout->addWidget(_timeLeftDisp);
+
+    QGroupBox *expGroup = new QGroupBox(_stattb);
+    expGroup->setTitle("Exposure");
+
+    QVBoxLayout *expLayout = new QVBoxLayout(expGroup);
+    
+    _expTimeDisp = new NumberButton(expGroup, "Time:", QString::null, 1, 999999, 1);
+    _expTimeDisp->setChecked(true);
+    _expCountsDisp = new NumberButton(expGroup, "Counts:", QString::null, 1, 99999999, 1);
+    _expCountsDisp->setChecked(false);
+    _expCountsDisp->setEnabled(false);
+
+    expLayout->addWidget(_expTimeDisp);
+    expLayout->addWidget(_expCountsDisp);
+
+    connect(_expTimeDisp, SIGNAL( toggled(bool) ), _expCountsDisp, SLOT( setUnchecked(bool) ));
+    connect(_expCountsDisp, SIGNAL( toggled(bool) ), _expTimeDisp, SLOT( setUnchecked(bool) ));
+    connect(_expTimeDisp, SIGNAL( toggled(bool) ), _expCountsDisp, SLOT( setAntiEnabled(bool) ));
+    connect(_expCountsDisp, SIGNAL( toggled(bool) ), _expTimeDisp, SLOT( setAntiEnabled(bool) ));
+
+    _expTimeDisp->setValue(1200);
+    _expCountsDisp->setValue(1000000);
+
+    _stattb->addWidget(acqGroup);
+    _stattb->addWidget(expGroup);
 
     return _stattb;
 }
-
-
 
 void MainWindow::createActions(){
     exitAct = new QAction(tr("&Exit"), this);
