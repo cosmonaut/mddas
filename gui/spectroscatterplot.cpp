@@ -335,6 +335,12 @@ void SpectroScatterPlot::setColorMap(int cm) {
         break;
     }
     case 9: {
+        d_curve->setColorMap(new IshiharaColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new IshiharaColorMap(_cm_mode));
+
+        break;
+    }
+    case 10: {
         d_curve->setColorMap(new BobbyColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new BobbyColorMap(_cm_mode));
 

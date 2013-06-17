@@ -61,6 +61,28 @@ public:
     }
 };
 
+class IshiharaColorMap: public MDDASColorMap {
+public:
+    IshiharaColorMap(uint mode = 0):
+        MDDASColorMap(QColor(206, 95, 68), QColor(86, 140, 78), mode) {
+        addColorStop(0.1, QColor(206,95,68));
+        addColorStop(0.10001, QColor(206,95,68));
+        addColorStop(0.2, QColor(238, 132, 106));
+        addColorStop(0.20001, QColor(238, 132, 106));
+        addColorStop(0.3, QColor(241, 187, 123));
+        addColorStop(0.30001, QColor(241, 187, 123));
+        addColorStop(0.4, QColor(255, 148, 0));
+        addColorStop(0.40001, QColor(255, 148, 0));
+        addColorStop(0.5, QColor(255, 214, 0));
+        addColorStop(0.50001, QColor(255, 214, 0));
+        addColorStop(0.6, QColor(201, 204, 127));
+        addColorStop(0.60001, QColor(201, 204, 127));
+        addColorStop(0.7, QColor(164, 173, 90));
+        addColorStop(0.70001, QColor(164, 173, 90));
+        addColorStop(0.8, QColor(86, 140, 78));
+    }
+};
+
 
 class TestMap : public MDDASColorMap {
 public:

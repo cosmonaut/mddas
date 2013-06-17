@@ -60,6 +60,7 @@ SpecBox::SpecBox(QWidget *parent):
     _cmSelector->addItem("spectral");
     _cmSelector->addItem("spectral2");
     _cmSelector->addItem("bone");
+    _cmSelector->addItem("Ishihara");
     _cmSelector->addItem("Spectrally Retarded");
 
     cmBoxLayout->addWidget(_cmSelector);
