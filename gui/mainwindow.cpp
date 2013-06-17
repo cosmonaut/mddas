@@ -157,10 +157,19 @@ MainWindow::MainWindow() {
     connect(_acquireAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ));
 
+    connect(_acquireAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ));
+
     connect(_acqTimer, SIGNAL( timeout() ), this, SLOT( appendData() ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ));
     connect(_clearAction, SIGNAL( triggered() ), this, SLOT( clearPlots() ));
     connect(_rateTimer, SIGNAL( timeout() ), this, SLOT( dispCountRate() ));
+
+    //connect(this, SIGNAL( acquisitionRun(bool) ), this, SLOT( toggleAcq(bool) ));
+    connect(this, SIGNAL( acquisitionRun(bool) ), _acquireAction, SLOT( setChecked(bool) ));
 
     pluginLoader = new QPluginLoader();
 
@@ -177,25 +186,44 @@ void MainWindow::toggleAcq(bool b) {
     int n = 0;
     QString teststr;
     if (b) {
-        //_count = 0;
-        //_rcount = 0;
+        _expGroup->setEnabled(false);
+
         clearPlots();
         _acqTimer->start();
         _rateTimer->start();
+        /* Start this regardless of mode to get exposure time */
+        _expTime.start();
+
+        if (d_monitorAction->isChecked()) {
+            _acqMode = 0;
+        } else {
+            if (_expTimeDisp->isChecked()) {
+                _acqMode = 1;
+            }
+            
+            if (_expCountsDisp->isChecked()){
+                _acqMode = 2;
+            }
+        }
+        qDebug() << "start acq";
+
     } else {
         _rateTimer->stop();
         _acqTimer->stop();
-        //_count = 0;
-        //_rcount = 0;
+
+        _totalCountsDisp->setNum(_totalCounts);
+
         n = sti->bufCount();
         teststr.setNum(n);
         qDebug() << "packets left: " << teststr;
+        qDebug() << "time elapsed: " << _expTime.elapsed()/1000;
+        qDebug() << "total counts: " << _totalCounts;
+        _expGroup->setEnabled(true);
     }
 }
 
 void MainWindow::appendData() {
     int n = 0;
-    //int count = 0;
     QString db;
     //int i = 0;
     n = sti->bufCount();
@@ -204,8 +232,7 @@ void MainWindow::appendData() {
             QVector<MDDASDataPoint> v = sti->bufDequeue();
             _count += v.size();
             _totalCounts += v.size();
-            // db.setNum(count);
-            // infoLabel->setText(db);
+
             if (_specMon->isVisible()) {
                 _specMon->append(v);
             }
@@ -220,16 +247,46 @@ void MainWindow::appendData() {
 
         }
     }
+
+    /* acqusition mode decision tree */
+    switch(_acqMode) {
+    case 0:
+        break;
+    case 1:
+        if ((_expTime.elapsed()/1000) >= _expTimeDisp->value()) {
+            //qDebug() << "elapse over";
+            emit acquisitionRun(false);
+        }
+        break;
+    case 2:
+
+        if (_totalCounts >= _expCountsDisp->value()) {
+            //qDebug() << "counts over!";
+            emit acquisitionRun(false);
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 /* Display count rate */
 void MainWindow::dispCountRate() {
+    if (_acquireAction->isChecked()) {
+        if (_expTimeDisp->isChecked()) {
+            //qDebug() << "elapsed: " << _expTime.elapsed();
+            _timeLeftDisp->setNum(_expTimeDisp->value() - ((double)_expTime.elapsed()/1000.0), 'f', 1);
+        }
+    }
+
+    _totalCountsDisp->setNum(_totalCounts);
+
     _avgcount += _count*10;
     _rcount += 1;
     _count = 0;
-    _totalCountsDisp->setNum(_totalCounts);
+
     if (_rcount > 9) {
-        _infoLabel->setNum((double)_avgcount/10.0);
+        //_infoLabel->setNum((double)_avgcount/10.0);
         _countRateDisp->setNum((double)_avgcount/10.0);
         _count = 0;
         _rcount = 0;
@@ -359,6 +416,7 @@ QToolBar *MainWindow::statToolBar() {
 
     QGroupBox *acqGroup = new QGroupBox(_stattb);
     acqGroup->setTitle("Acquisition");
+    acqGroup->setFixedWidth(200);
 
     QVBoxLayout *acqLayout = new QVBoxLayout(acqGroup);
     //acqLayout->setContentsMargins(QMargins(0,0,0,0));
@@ -371,14 +429,14 @@ QToolBar *MainWindow::statToolBar() {
     acqLayout->addWidget(_totalCountsDisp);
     acqLayout->addWidget(_timeLeftDisp);
 
-    QGroupBox *expGroup = new QGroupBox(_stattb);
-    expGroup->setTitle("Exposure");
+    _expGroup = new QGroupBox(_stattb);
+    _expGroup->setTitle("Exposure");
 
-    QVBoxLayout *expLayout = new QVBoxLayout(expGroup);
+    QVBoxLayout *expLayout = new QVBoxLayout(_expGroup);
     
-    _expTimeDisp = new NumberButton(expGroup, "Time:", QString::null, 1, 999999, 1);
+    _expTimeDisp = new NumberButton(_expGroup, "Time:", QString::null, 1, 999999, 1);
     _expTimeDisp->setChecked(true);
-    _expCountsDisp = new NumberButton(expGroup, "Counts:", QString::null, 1, 99999999, 1);
+    _expCountsDisp = new NumberButton(_expGroup, "Counts:", QString::null, 1, 99999999, 1);
     _expCountsDisp->setChecked(false);
     _expCountsDisp->setEnabled(false);
 
@@ -394,7 +452,7 @@ QToolBar *MainWindow::statToolBar() {
     _expCountsDisp->setValue(1000000);
 
     _stattb->addWidget(acqGroup);
-    _stattb->addWidget(expGroup);
+    _stattb->addWidget(_expGroup);
 
     return _stattb;
 }

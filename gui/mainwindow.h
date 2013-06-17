@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTime>
 #include <stdint.h>
 
 QT_BEGIN_NAMESPACE
@@ -12,6 +13,7 @@ class QMenu;
 class QPluginLoader;
 class QTimer;
 class QErrorMessage;
+class QGroupBox;
 QT_END_NAMESPACE
 class MyToolBar;
 class SpecMonBox;
@@ -31,6 +33,9 @@ public:
     ~MainWindow();
 
 protected:
+
+signals:
+    void acquisitionRun(bool);
 
 private slots:
     bool listPlugins();
@@ -88,6 +93,7 @@ private:
 
     QTimer *_acqTimer;
     QTimer *_rateTimer;
+    QTime _expTime;
 
     StatusNumber *_countRateDisp;
     StatusNumber *_totalCountsDisp;
@@ -95,7 +101,9 @@ private:
     NumberButton *_expTimeDisp;
     NumberButton *_expCountsDisp;
 
+    QGroupBox *_expGroup;
 
+    uint16_t _acqMode;
     uint64_t _totalCounts;
     int _count;
     int _rcount;
