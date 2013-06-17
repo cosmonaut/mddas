@@ -8,6 +8,7 @@
 #include "histbox.h"
 #include "numberbutton.h"
 #include "mainwindow.h"
+#include "atomic.xpm"
 #include "eye.xpm"
 #include "xicon.xpm"
 
@@ -142,17 +143,24 @@ MainWindow::MainWindow() {
     addToolBar(plotToolBar());
     addToolBar(Qt::BottomToolBarArea, statToolBar());
 
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ) );
-    connect(_acqTimer, SIGNAL( timeout() ), this, SLOT( appendData() ) );
-    connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ) );
-    connect(_clearAction, SIGNAL( triggered() ), this, SLOT( clearPlots() ) );
-    connect(_rateTimer, SIGNAL( timeout() ), this, SLOT( dispCountRate() ) );
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _acquireAction, SLOT( setDisabled(bool) ));
+
+    connect(_acquireAction, SIGNAL( toggled(bool) ), d_monitorAction, SLOT( setDisabled(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ));
+
+    connect(_acqTimer, SIGNAL( timeout() ), this, SLOT( appendData() ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ));
+    connect(_clearAction, SIGNAL( triggered() ), this, SLOT( clearPlots() ));
+    connect(_rateTimer, SIGNAL( timeout() ), this, SLOT( dispCountRate() ));
 
     pluginLoader = new QPluginLoader();
 
@@ -169,16 +177,16 @@ void MainWindow::toggleAcq(bool b) {
     int n = 0;
     QString teststr;
     if (b) {
-        _count = 0;
-        _rcount = 0;
+        //_count = 0;
+        //_rcount = 0;
         clearPlots();
         _acqTimer->start();
         _rateTimer->start();
     } else {
         _rateTimer->stop();
         _acqTimer->stop();
-        _count = 0;
-        _rcount = 0;
+        //_count = 0;
+        //_rcount = 0;
         n = sti->bufCount();
         teststr.setNum(n);
         qDebug() << "packets left: " << teststr;
@@ -274,11 +282,16 @@ QToolBar *MainWindow::toolBar() {
     d_monitorAction->setCheckable(true);
     d_monitorAction->setEnabled(true);
 
+    _acquireAction = new QAction(QIcon(atomic_xpm), "Acquire", _acqtb);
+    _acquireAction->setCheckable(true);
+    _acquireAction->setEnabled(true);
+
     _clearAction = new QAction(QIcon(xicon_xpm), "Clear", _acqtb);
     _clearAction->setCheckable(false);
     _clearAction->setEnabled(true);
 
     _acqtb->addAction(d_monitorAction);
+    _acqtb->addAction(_acquireAction);
     _acqtb->addAction(_clearAction);
 
     /* Move the unload button out of the damned way. */

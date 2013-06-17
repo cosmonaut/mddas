@@ -61,6 +61,7 @@ private:
     QAction *acqLoadAct;
     QAction *unloadAction;
     QAction *d_monitorAction;
+    QAction *_acquireAction;
     QAction *_clearAction;
     QAction *_specMonAction;
     QAction *_specAction;

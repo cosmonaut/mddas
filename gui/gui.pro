@@ -12,7 +12,8 @@ TARGET = mddas
 #}
 
 
-HEADERS       = colormaps.h \
+HEADERS       = atomic.xpm \
+                colormaps.h \
                 mainwindow.h \
                 mddasdatainterface.h \
                 mddasdatapoint.h \
