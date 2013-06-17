@@ -70,6 +70,9 @@ MainWindow::MainWindow() {
     _pc = new MDDASPlotConfig();
     //_pc->getXMax();
 
+    _mddasData = new QVector<MDDASDataPoint>();
+    _mddasTimeData = new QHash<uint, double>();
+
     QWidget *widget = new QWidget(this);
     setCentralWidget(widget);
 
@@ -230,6 +233,13 @@ void MainWindow::appendData() {
     if (n > 0) {
         for (int i = 0; i < n; i++) {
             QVector<MDDASDataPoint> v = sti->bufDequeue();
+            
+            /* Store data in acquisition mode */
+            if (_acquireAction->isChecked()) {
+                _mddasTimeData->insert(_totalCounts, (double)_expTime.elapsed()/1000.0);
+                (*_mddasData) += v;
+            }
+
             _count += v.size();
             _totalCounts += v.size();
 
@@ -300,6 +310,15 @@ void MainWindow::clearPlots() {
     _specMon->clear();
     _spec->clear();
     _hist->clear();
+
+    /* Clear stored memory */
+    qDebug() << "sizes: " << _mddasData->size() << " " << _mddasTimeData->size();
+    qDebug() << (*_mddasTimeData);
+    _mddasData->clear();
+    _mddasData->squeeze();
+
+    _mddasTimeData->clear();
+    _mddasTimeData->squeeze();
 
     /* Clear count rate and total counts info */
     _totalCountsDisp->setNum(0);

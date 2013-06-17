@@ -20,6 +20,7 @@ class SpecMonBox;
 class SpecBox;
 class HistBox;
 class MDDASPlotConfig;
+class MDDASDataPoint;
 class SamplingThreadInterface;
 class StatusNumber;
 class NumberButton;
@@ -108,6 +109,9 @@ private:
     int _count;
     int _rcount;
     int _avgcount;
+
+    QVector<MDDASDataPoint> *_mddasData;
+    QHash<uint, double> *_mddasTimeData;
 };
 
 #endif
