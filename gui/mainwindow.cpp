@@ -24,6 +24,42 @@ public:
     }    
 };
 
+class StatusNumber: public QWidget
+{
+public:
+    StatusNumber(QWidget *parent, const QString &prefix, double val):
+        QWidget(parent)
+    {
+        QHBoxLayout *layout = new QHBoxLayout(this);
+
+        if (!prefix.isEmpty()) {
+            label = new QLabel(prefix + " ", this);
+            //layout->addWidget(new QLabel(prefix + " ", this));
+            layout->addWidget(label);
+        } else {
+            label = new QLabel("", this);
+            layout->addWidget(label);
+        }
+            
+        d_number = new QLabel(this);
+        d_number->setNum(val);
+
+        layout->addWidget(d_number);
+        layout->setAlignment(label, Qt::AlignLeft);
+        layout->setAlignment(d_number, Qt::AlignRight);
+    }
+
+    void setNum(double value, char format = 'g', int precision = 6) { 
+        QString lab_str;
+        lab_str.setNum(value, format, precision);
+        d_number->setText(lab_str);
+    }
+
+private:
+    QLabel *label;
+    QLabel *d_number;
+};
+
 MainWindow::MainWindow() {
     loadedPlugin = "";
 
@@ -102,6 +138,7 @@ MainWindow::MainWindow() {
     addToolBar(toolBar());
     addToolBarBreak();
     addToolBar(plotToolBar());
+    addToolBar(Qt::BottomToolBarArea, statToolBar());
 
     connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ) );
     connect(d_monitorAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ) );
@@ -284,6 +321,18 @@ QToolBar *MainWindow::plotToolBar() {
 
     return _plottb;
 }
+
+QToolBar *MainWindow::statToolBar() {
+    _stattb = new MyToolBar(this);
+    
+    _stattb->setAllowedAreas(Qt::BottomToolBarArea);
+    _stattb->setMovable(false);
+    _stattb->setToolButtonStyle(Qt::ToolButtonTextOnly);
+
+    return _stattb;
+}
+
+
 
 void MainWindow::createActions(){
     exitAct = new QAction(tr("&Exit"), this);

@@ -47,6 +47,7 @@ private:
 
     QToolBar *toolBar();
     QToolBar *plotToolBar();
+    QToolBar *statToolBar();
 
     QLabel *_infoLabel;
 
@@ -71,6 +72,7 @@ private:
     /* Toolbars */
     MyToolBar *_acqtb;
     MyToolBar *_plottb;
+    MyToolBar *_stattb;
 
     QList<QAction *> *_plotActionList;
     MDDASPlotConfig *_pc;
