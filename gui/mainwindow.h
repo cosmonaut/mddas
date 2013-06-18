@@ -111,7 +111,10 @@ private:
     int _avgcount;
 
     QVector<MDDASDataPoint> *_mddasData;
-    QHash<uint, double> *_mddasTimeData;
+    //QHash<uint, double> *_mddasTimeData;
+    /* Use a QMap because it is sorted by key. This is a key:value
+       pair of position:time for the _mddasData. */
+    QMap<uint, double> *_mddasTimeData;
 };
 
 #endif

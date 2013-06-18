@@ -71,7 +71,8 @@ MainWindow::MainWindow() {
     //_pc->getXMax();
 
     _mddasData = new QVector<MDDASDataPoint>();
-    _mddasTimeData = new QHash<uint, double>();
+    //_mddasTimeData = new QHash<uint, double>();
+    _mddasTimeData = new QMap<uint, double>();
 
     QWidget *widget = new QWidget(this);
     setCentralWidget(widget);
@@ -312,13 +313,16 @@ void MainWindow::clearPlots() {
     _hist->clear();
 
     /* Clear stored memory */
-    qDebug() << "sizes: " << _mddasData->size() << " " << _mddasTimeData->size();
-    qDebug() << (*_mddasTimeData);
+    //qDebug() << "sizes: " << _mddasData->size() << " " << _mddasTimeData->size();
+    // QMapIterator<uint, double> i((*_mddasTimeData));
+    // while(i.hasNext()) {
+    //     i.next();
+    //     qDebug() << i.key() << ": " << i.value();
+    // }
     _mddasData->clear();
     _mddasData->squeeze();
 
     _mddasTimeData->clear();
-    _mddasTimeData->squeeze();
 
     /* Clear count rate and total counts info */
     _totalCountsDisp->setNum(0);
