@@ -207,9 +207,11 @@ void SpectroScatterPlot::clear() {
     //rightAxis->setColorMap( zInterval, new GISTEarthColorMap());
     if (zInterval.isValid()) {
         //qDebug() << zInterval.minValue() << " " << zInterval.maxValue();
-        rightAxis->setColorBarInterval(zInterval);
+        rightAxis->setColorMap(zInterval, const_cast<QwtColorMap *>(rightAxis->colorMap()));
+        //rightAxis->setColorBarInterval(zInterval);
     } else {
-        rightAxis->setColorBarInterval(QwtInterval(0.1, 1.0));
+        //rightAxis->setColorBarInterval(QwtInterval(0.1, 1.0));
+        rightAxis->setColorMap(QwtInterval(0.1, 1.0), const_cast<QwtColorMap *>(rightAxis->colorMap()));
     }
 
     setAxisScale(QwtPlot::yRight, 0.1, 1);
@@ -251,15 +253,18 @@ void SpectroScatterPlot::replotWithScale() {
     //rightAxis->setColorMap( zInterval, new GISTEarthColorMap());
     if (zInterval.isValid()) {
         if (zInterval.width() == 0) {
-            rightAxis->setColorBarInterval(QwtInterval(0.1, 1));
+            //rightAxis->setColorBarInterval(QwtInterval(0.1, 1));
+            rightAxis->setColorMap(QwtInterval(0.1, 1), const_cast<QwtColorMap *>(rightAxis->colorMap()));
             //setAxisScale(QwtPlot::yRight, 0, 1 );
             setAxisScale(QwtPlot::yRight, 0.1, 1 );
         } else {
-            rightAxis->setColorBarInterval( zInterval);
+            //rightAxis->setColorBarInterval( zInterval);
+            rightAxis->setColorMap( zInterval, const_cast<QwtColorMap *>(rightAxis->colorMap()));
             setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue() );
         }
     } else {
-        rightAxis->setColorBarInterval(QwtInterval(0.1, 1));
+        rightAxis->setColorMap(QwtInterval(0.1, 1), const_cast<QwtColorMap *>(rightAxis->colorMap()));
+        //rightAxis->setColorBarInterval(QwtInterval(0.1, 1));
         //setAxisScale(QwtPlot::yRight, 0, 1 );
         setAxisScale(QwtPlot::yRight, 0.1, 1 );
     }
