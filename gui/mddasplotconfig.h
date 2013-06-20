@@ -18,12 +18,12 @@ public:
     void setPMax(int);
     void setPMin(int);
 
-    int getXMax(void);
-    int getXMin(void);
-    int getYMax(void);
-    int getYMin(void);
-    int getPMax(void);
-    int getPMin(void);
+    int getXMax(void) const;
+    int getXMin(void) const;
+    int getYMax(void) const;
+    int getYMin(void) const;
+    int getPMax(void) const;
+    int getPMin(void) const;
 
 private:
     int _x_max;

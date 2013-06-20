@@ -39,26 +39,26 @@ void MDDASPlotConfig::setPMin(int p_min) {
 }
 
 
-int MDDASPlotConfig::getXMax(void) {
+int MDDASPlotConfig::getXMax(void) const {
     return _x_max;
 }
 
-int MDDASPlotConfig::getXMin(void) {
+int MDDASPlotConfig::getXMin(void) const {
     return _x_min;
 }
 
-int MDDASPlotConfig::getYMax(void) {
+int MDDASPlotConfig::getYMax(void) const {
     return _y_max;
 }
 
-int MDDASPlotConfig::getYMin(void) {
+int MDDASPlotConfig::getYMin(void) const {
     return _y_min;
 }
 
-int MDDASPlotConfig::getPMax(void) {
+int MDDASPlotConfig::getPMax(void) const {
     return _p_max;
 }
 
-int MDDASPlotConfig::getPMin(void) {
+int MDDASPlotConfig::getPMin(void) const {
     return _p_min;
 }
