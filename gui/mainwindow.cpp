@@ -1,6 +1,7 @@
 #include <QtGui>
 
 #include "samplingthreadinterface.h"
+#include "fits.h"
 #include "mddasplotconfig.h"
 #include "mddasdatapoint.h"
 #include "specmonbox.h"
@@ -10,6 +11,7 @@
 #include "mainwindow.h"
 #include "atomic.xpm"
 #include "eye.xpm"
+#include "save.xpm"
 #include "xicon.xpm"
 
 #define MDDAS_PLUGIN_PATH "../mddasplugins"
@@ -172,6 +174,8 @@ MainWindow::MainWindow() {
     connect(_clearAction, SIGNAL( triggered() ), this, SLOT( clearPlots() ));
     connect(_rateTimer, SIGNAL( timeout() ), this, SLOT( dispCountRate() ));
 
+    connect(_saveAction, SIGNAL( triggered() ), this, SLOT( saveFits() ));
+
     //connect(this, SIGNAL( acquisitionRun(bool) ), this, SLOT( toggleAcq(bool) ));
     connect(this, SIGNAL( acquisitionRun(bool) ), _acquireAction, SLOT( setChecked(bool) ));
 
@@ -198,6 +202,8 @@ void MainWindow::toggleAcq(bool b) {
         /* Start this regardless of mode to get exposure time */
         _expTime.start();
 
+        _obsUTCTimeStamp = QDateTime::currentDateTimeUtc();
+
         if (d_monitorAction->isChecked()) {
             _acqMode = 0;
         } else {
@@ -215,6 +221,8 @@ void MainWindow::toggleAcq(bool b) {
         _rateTimer->stop();
         _acqTimer->stop();
 
+        _expTimeTotal = (double)_expTime.elapsed()/1000.0;
+
         _totalCountsDisp->setNum(_totalCounts);
 
         n = sti->bufCount();
@@ -223,6 +231,10 @@ void MainWindow::toggleAcq(bool b) {
         qDebug() << "time elapsed: " << _expTime.elapsed()/1000;
         qDebug() << "total counts: " << _totalCounts;
         _expGroup->setEnabled(true);
+
+        if (_acqMode > 0) {
+            _saveAction->setEnabled(true);
+        }
     }
 }
 
@@ -312,6 +324,9 @@ void MainWindow::clearPlots() {
     _spec->clear();
     _hist->clear();
 
+    /* There is nothing to save now */
+    _saveAction->setEnabled(false);
+
     /* Clear stored memory */
     //qDebug() << "sizes: " << _mddasData->size() << " " << _mddasTimeData->size();
     // QMapIterator<uint, double> i((*_mddasTimeData));
@@ -342,6 +357,19 @@ void MainWindow::threadStartPause(bool sp) {
     }
 }
 
+void MainWindow::saveFits() {
+    qDebug() << "Saving fits";
+    if (writeFitsImage(_mddasData,
+                       _mddasTimeData,
+                       _obsUTCTimeStamp,
+                       _expTimeTotal,
+                       _pc) == 0) {
+        _saveAction->setEnabled(false);
+    } else {
+        qDebug() << "Error saving fits file";
+    }
+}
+
 /* Primary toolbar */
 QToolBar *MainWindow::toolBar() {
     _acqtb = new MyToolBar(this);
@@ -366,12 +394,17 @@ QToolBar *MainWindow::toolBar() {
     _acquireAction->setCheckable(true);
     _acquireAction->setEnabled(true);
 
+    _saveAction = new QAction(QIcon(save_xpm), "Save", _acqtb);
+    _saveAction->setCheckable(false);
+    _saveAction->setEnabled(false);
+
     _clearAction = new QAction(QIcon(xicon_xpm), "Clear", _acqtb);
     _clearAction->setCheckable(false);
     _clearAction->setEnabled(true);
 
     _acqtb->addAction(d_monitorAction);
     _acqtb->addAction(_acquireAction);
+    _acqtb->addAction(_saveAction);
     _acqtb->addAction(_clearAction);
 
     /* Move the unload button out of the damned way. */

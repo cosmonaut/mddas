@@ -47,6 +47,7 @@ private slots:
     void toggleAcq(bool);
     void clearPlots();
     void dispCountRate();
+    void saveFits();
 
 private:
     void createActions();
@@ -68,6 +69,7 @@ private:
     QAction *unloadAction;
     QAction *d_monitorAction;
     QAction *_acquireAction;
+    QAction *_saveAction;
     QAction *_clearAction;
     QAction *_specMonAction;
     QAction *_specAction;
@@ -104,11 +106,15 @@ private:
 
     QGroupBox *_expGroup;
 
+    QDateTime _obsUTCTimeStamp;
+
     uint16_t _acqMode;
     uint64_t _totalCounts;
     int _count;
     int _rcount;
     int _avgcount;
+    /* Stored exposure time */
+    double _expTimeTotal;
 
     QVector<MDDASDataPoint> *_mddasData;
     //QHash<uint, double> *_mddasTimeData;

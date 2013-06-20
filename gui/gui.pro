@@ -1,6 +1,6 @@
 # Qwt stuff
 INCLUDEPATH += /usr/include/qwt
-LIBS += -lqwt
+LIBS += -lqwt -lCCfits -lcfitsio
 
 CONFIG -= release
 CONFIG += debug
@@ -14,6 +14,7 @@ TARGET = mddas
 
 HEADERS       = atomic.xpm \
                 colormaps.h \
+                fits.h \
                 mainwindow.h \
                 mddasdatainterface.h \
                 mddasdatapoint.h \
@@ -30,9 +31,11 @@ HEADERS       = atomic.xpm \
                 spectroscatterplot.h \
                 zoomer.h \
                 eye.xpm \
+                save.xpm \
                 xicon.xpm
 
-SOURCES       = mainwindow.cpp \
+SOURCES       = fits.cpp \
+                mainwindow.cpp \
                 main.cpp \
                 mddasdatainterface.cpp \
                 mddasdatapoint.cpp \
