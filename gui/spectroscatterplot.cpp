@@ -89,6 +89,7 @@ public:
         _max_v = 0;
     }        
 
+    /* Overloaded value function that returns image z vals from map. */
     virtual double value(double x, double y) const {
         const QwtInterval xInterval = interval( Qt::XAxis );
         const QwtInterval yInterval = interval( Qt::YAxis );
@@ -96,15 +97,15 @@ public:
         /* Use only data within the plot region */
         if ( !( xInterval.contains(x) && yInterval.contains(y) ) )
             return qQNaN();
-        
-        /* Overloaded value function that returns image z vals from map. */
-        return (double)vals[y_lim*(uint)x + (uint)y];
-        // if (x < x_lim && y < y_lim) {
-        //     return (double)vals[y_lim*(uint)x + (uint)y];
-        // } else {
-        //     /* Edge case! */
-        //     return (double)0;
-        // }
+
+        if (x < x_lim && y < y_lim) {
+            return (double)vals[y_lim*(uint)x + (uint)y];
+        } else {
+            /* Edge case! */
+            return (double)0.0;
+        }
+
+        //return (double)vals[y_lim *(uint)x + (uint)y];
     }
 
 private:
@@ -225,15 +226,14 @@ QSize SpectroScatterPlot::sizeHint() const {
 }
 
 void SpectroScatterPlot::configure(MDDASPlotConfig pc) {
-    qDebug() << "deleting old data";
+    // qDebug() << "specmon deleting old data";
     delete d_curve->data();
-    qDebug() << "deleted old data";
-    QString str;
-    str.setNum(pc.getXMax());
-    qDebug() << "x max: " << str;
+    // qDebug() << "specmon deleted old data";
+
+    //qDebug() << "spec x max: " << pc.getXMax();
     d_curve->setData(new SpectrogramData(pc.getXMax(), pc.getYMax()));
     //d_curve->setColorMap(new ColorMap());
-    qDebug() << "made new data";
+    //qDebug() << "specmon made new data";
     setAxisScale(xBottom, 0, pc.getXMax());
     setAxisScale(yLeft, 0, pc.getYMax());
 
