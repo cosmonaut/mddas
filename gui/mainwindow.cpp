@@ -2,6 +2,7 @@
 
 #include "samplingthreadinterface.h"
 #include "fits.h"
+#include "mddasconfigdialog.h"
 #include "mddasplotconfig.h"
 #include "mddasdatapoint.h"
 #include "specmonbox.h"
@@ -65,7 +66,7 @@ private:
     QLabel *d_number;
 };
 
-MainWindow::MainWindow() {
+MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     loadedPlugin = "";
 
     /* Configuration for the plots */
@@ -74,10 +75,59 @@ MainWindow::MainWindow() {
 
     _mddasData = new QVector<MDDASDataPoint>();
     //_mddasTimeData = new QHash<uint, double>();
-    _mddasTimeData = new QMap<uint, double>();
+    //_mddasTimeData = new QMap<uint, double>();
+    _mddasTimeData = new QVector<double>;
 
     QWidget *widget = new QWidget(this);
     setCentralWidget(widget);
+
+    qDebug() << "Creating settings...";
+
+    _defaultSettings = new QMap<QString, QVariant>();
+    _currentSettings = new QMap<QString, QVariant>();
+    //_defaultSettings->insert("fitsImage", true);
+    createDefaultSettings();
+    (*_currentSettings) = (*_defaultSettings);
+
+    _configDialog = new MDDASConfigDialog(this);
+    //_configDialog->setDefaults((*_defaultSettings));
+    //_configDialog->setSettings((*_currentSettings));
+    
+
+    _mddasSettings = new QSettings(QSettings::NativeFormat, QSettings::UserScope, "mddas", "default", this);
+    //_mddasSettings = new QSettings(_settingsFileName, QSettings::NativeFormat, this);
+    _mddasSettings->sync();
+    
+    if (_mddasSettings->status() != 0) {
+        qDebug() << "Error reading config file, creating new one";
+        makeDefaultConf();
+        // create default conf;
+    }
+
+    if (_defaultSettings->size() == _mddasSettings->allKeys().size()) {
+        for (int i = 0; i < _mddasSettings->allKeys().size(); i++) {
+            if (!(_defaultSettings->keys().contains(_mddasSettings->allKeys()[i]))) {
+                // create default conf
+                qDebug() << "bad key, setting defaults";
+                makeDefaultConf();
+                break;
+            }
+        }
+    } else {
+        // create default conf
+        qDebug() << "no conf file, creating default";
+        makeDefaultConf();
+    }
+    
+    *_currentSettings = getMapFromSettings();
+
+    _configDialog->setDefaults(*_defaultSettings);
+    _configDialog->setSettings(*_currentSettings);
+    
+    // qDebug() << _mddasSettings->allKeys();
+    // qDebug() << _mddasSettings->fileName();
+    // qDebug() << _mddasSettings->scope();
+    // qDebug() << _mddasSettings->status();
 
     /* List of plugins */
     pluginsList = QVector<QString>(0);
@@ -176,6 +226,9 @@ MainWindow::MainWindow() {
 
     connect(_saveAction, SIGNAL( triggered() ), this, SLOT( saveFits() ));
 
+    //connect(_prefAct, SIGNAL( triggered() ), _configDialog, SLOT( exec() ));
+    connect(_prefAct, SIGNAL( triggered() ), this, SLOT( setPrefs() ));
+
     //connect(this, SIGNAL( acquisitionRun(bool) ), this, SLOT( toggleAcq(bool) ));
     connect(this, SIGNAL( acquisitionRun(bool) ), _acquireAction, SLOT( setChecked(bool) ));
 
@@ -241,6 +294,7 @@ void MainWindow::toggleAcq(bool b) {
 void MainWindow::appendData() {
     int n = 0;
     QString db;
+    double t = 0.0;
     //int i = 0;
     n = sti->bufCount();
     if (n > 0) {
@@ -249,8 +303,13 @@ void MainWindow::appendData() {
             
             /* Store data in acquisition mode */
             if (_acquireAction->isChecked()) {
-                _mddasTimeData->insert(_totalCounts, (double)_expTime.elapsed()/1000.0);
-                (*_mddasData) += v;
+                //_mddasTimeData->insert(_totalCounts, (double)_expTime.elapsed()/1000.0);
+                t = (double)_expTime.elapsed()/1000.0;
+                //(*_mddasData) += v;
+                for (int n = 0; n < v.size(); n++) {
+                    _mddasData->append(v.value(n));
+                    _mddasTimeData->append(t);
+                }
             }
 
             _count += v.size();
@@ -338,6 +397,7 @@ void MainWindow::clearPlots() {
     _mddasData->squeeze();
 
     _mddasTimeData->clear();
+    _mddasTimeData->squeeze();
 
     /* Clear count rate and total counts info */
     _totalCountsDisp->setNum(0);
@@ -363,7 +423,8 @@ void MainWindow::saveFits() {
                        _mddasTimeData,
                        _obsUTCTimeStamp,
                        _expTimeTotal,
-                       _pc) == 0) {
+                       _pc,
+                       _currentSettings) == 0) {
         _saveAction->setEnabled(false);
     } else {
         qDebug() << "Error saving fits file";
@@ -519,6 +580,9 @@ void MainWindow::createActions(){
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, SIGNAL(triggered()), this, SLOT(close()));
 
+    _prefAct = new QAction("Preferences", this);
+    _prefAct->setStatusTip("So, this is captain sunshine?");
+
     acqLoadAct = new QAction(tr("&Load Sampler"), this);
     acqLoadAct->setStatusTip(tr("Load a sampling thread"));
 
@@ -527,12 +591,56 @@ void MainWindow::createActions(){
 
 void MainWindow::createMenus() {
     fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(_prefAct);
     fileMenu->addSeparator();
 
     fileMenu->addAction(exitAct);
 
     acqMenu = menuBar()->addMenu(tr("&Acquisition"));
     acqMenu->addAction(acqLoadAct);
+}
+
+void MainWindow::setPrefs() {
+    _configDialog->exec();
+    (*_currentSettings) = *(_configDialog->getSettings());
+    setSettingsFromMap(*_currentSettings);
+    qDebug() << "mainwin settings: " << _currentSettings->value("fitsImage");
+}
+
+void MainWindow::createDefaultSettings() {
+    _defaultSettings->insert("fitsImage", true);
+}
+
+void MainWindow::makeDefaultConf() {
+    qDebug() << "Creating default config";
+    QList<QString> k = _defaultSettings->keys();
+    for (int i = 0; i < k.size(); i++) {
+        _mddasSettings->setValue(k[i], _defaultSettings->value(k[i]));
+    }
+
+    _mddasSettings->sync();
+    if (_mddasSettings->status() != 0) {
+        qDebug() << "error creating conf file!";
+    }
+}
+
+void MainWindow::setSettingsFromMap(QMap<QString, QVariant> setting_map) {
+    QList<QString> k = setting_map.keys();
+    for (int i = 0; i < k.size(); i++) {
+        _currentSettings->insert(k[i], setting_map[k[i]]);
+        _mddasSettings->setValue(k[i], setting_map.value(k[i]));
+        _mddasSettings->sync();
+    }
+}
+
+QMap<QString, QVariant> MainWindow::getMapFromSettings() {
+    QMap<QString, QVariant> temp_map;
+    QList<QString> k = _mddasSettings->allKeys();
+    for (int i = 0; i < k.size(); i++) {
+        temp_map.insert(k[i], _mddasSettings->value(k[i]));
+    }
+
+    return temp_map;
 }
 
 /* Load a sampling plugin */
@@ -606,7 +714,8 @@ bool MainWindow::unloadPlugin() {
 }
 
 /* Show all plugins in the designated plugin directory */
-bool MainWindow::listPlugins() {
+//bool MainWindow::listPlugins() {
+void MainWindow::listPlugins() {
     qDebug() << "Listing Plugins";
     pluginsList.clear();
 
@@ -632,7 +741,8 @@ bool MainWindow::listPlugins() {
     connect(&ip, SIGNAL(textValueSelected(const QString &)), this, SLOT(setPlugin(const QString &)));
 
     ip.exec();
-    return true;
+    //qDebug() << "listplugins done, returning";
+    //return true;
 }
 
 /* Run plugin and configure plot widgets */
@@ -678,4 +788,6 @@ void MainWindow::configurePlots() {
     _specMon->configure(*_pc);
     _spec->configure(*_pc);
     _hist->configure(*_pc);
+    qDebug() << "Plots configured";
 }
+

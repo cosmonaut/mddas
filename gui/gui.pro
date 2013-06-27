@@ -16,6 +16,7 @@ HEADERS       = atomic.xpm \
                 colormaps.h \
                 fits.h \
                 mainwindow.h \
+                mddasconfigdialog.h \
                 mddasdatainterface.h \
                 mddasdatapoint.h \
                 mddasplotconfig.h \ 
@@ -37,6 +38,7 @@ HEADERS       = atomic.xpm \
 SOURCES       = fits.cpp \
                 mainwindow.cpp \
                 main.cpp \
+                mddasconfigdialog.cpp \
                 mddasdatainterface.cpp \
                 mddasdatapoint.cpp \
                 mddasplotconfig.cpp \ 

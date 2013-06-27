@@ -9,9 +9,10 @@ class MDDASPlotConfig;
 class QDateTime;
 
 int writeFitsImage(const QVector<MDDASDataPoint> *, 
-                   const QMap<uint, double> *, 
+                   const QVector<double> *,
                    const QDateTime,
                    const double, 
-                   const MDDASPlotConfig*);
+                   const MDDASPlotConfig*,
+                   const QMap<QString, QVariant>*);
 
 #endif // _FITS_H_

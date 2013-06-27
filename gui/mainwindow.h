@@ -14,6 +14,7 @@ class QPluginLoader;
 class QTimer;
 class QErrorMessage;
 class QGroupBox;
+class QSettings;
 QT_END_NAMESPACE
 class MyToolBar;
 class SpecMonBox;
@@ -24,13 +25,14 @@ class MDDASDataPoint;
 class SamplingThreadInterface;
 class StatusNumber;
 class NumberButton;
+class MDDASConfigDialog;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow();
+    MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
 protected:
@@ -39,7 +41,7 @@ signals:
     void acquisitionRun(bool);
 
 private slots:
-    bool listPlugins();
+    void listPlugins();
     void setPlugin(const QString &);
     void threadStartPause(bool);
     bool unloadPlugin();
@@ -48,12 +50,17 @@ private slots:
     void clearPlots();
     void dispCountRate();
     void saveFits();
+    void makeDefaultConf();
+    void setPrefs();
 
 private:
     void createActions();
     void createMenus();
     bool loadPlugin(QString);
     void configurePlots();
+    void createDefaultSettings();
+    void setSettingsFromMap(QMap<QString, QVariant>);
+    QMap<QString, QVariant> getMapFromSettings();
 
     QToolBar *toolBar();
     QToolBar *plotToolBar();
@@ -65,6 +72,7 @@ private:
     QMenu *acqMenu;
 
     QAction *exitAct;
+    QAction *_prefAct;
     QAction *acqLoadAct;
     QAction *unloadAction;
     QAction *d_monitorAction;
@@ -120,7 +128,16 @@ private:
     //QHash<uint, double> *_mddasTimeData;
     /* Use a QMap because it is sorted by key. This is a key:value
        pair of position:time for the _mddasData. */
-    QMap<uint, double> *_mddasTimeData;
+    //QMap<uint, double> *_mddasTimeData;
+    QVector<double> *_mddasTimeData;
+
+    QSettings *_mddasSettings;
+    QString _settingsFileName;
+    //QStringList _settingsKeys;
+    QMap<QString, QVariant> *_defaultSettings;
+    QMap<QString, QVariant> *_currentSettings;
+
+    MDDASConfigDialog *_configDialog;
 };
 
 #endif
