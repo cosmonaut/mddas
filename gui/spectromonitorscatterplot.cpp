@@ -156,14 +156,15 @@ QSize SpectroMonitorScatterPlot::sizeHint() const {
 }
 
 void SpectroMonitorScatterPlot::configure(MDDASPlotConfig pc) {
-    qDebug() << "deleting old data";
+    // qDebug() << "deleting old data";
     delete d_curve->data();
-    qDebug() << "deleted old data";
-    QString str;
-    str.setNum(pc.getXMax());
-    qDebug() << "x max: " << str;
+    // qDebug() << "deleted old data";
+    //QString str;
+    //str.setNum(pc.getXMax());
+
+    //qDebug() << "specmon x max: " << pc.getXMax();
     d_curve->setData(new SpectrogramMonitorData(pc.getXMax(), pc.getYMax()));
-    qDebug() << "made new data";
+    //qDebug() << "made new data";
     setAxisScale(xBottom, 0, pc.getXMax());
     setAxisScale(yLeft, 0, pc.getYMax());
 

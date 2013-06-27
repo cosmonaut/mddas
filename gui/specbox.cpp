@@ -121,14 +121,10 @@ void SpecBox::activate(bool b) {
 // }
 
 void SpecBox::configure(MDDASPlotConfig pc) {
-    
-    QString str;
-    str.setNum(pc.getXMax());
-    qDebug() << "specbox x: " << str;
-    str.setNum(pc.getYMax());
-    qDebug() << "specbox y: " << str;
+    //qDebug() << "specbox x: " << pc.getXMax();
+    //qDebug() << "specbox y: " << pc.getYMax();
+    /* Send plot config to plot */
     _plot->configure(pc);
-    // Send pc to plot
 }
 
 void SpecBox::clear() {

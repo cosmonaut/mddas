@@ -79,12 +79,11 @@ void SpecMonBox::setRefreshTimer(double d) {
 }
 
 void SpecMonBox::configure(MDDASPlotConfig pc) {
-    
-    QString str;
-    str.setNum(pc.getXMax());
-    qDebug() << "specmonbox x: " << str;
-    str.setNum(pc.getYMax());
-    qDebug() << "specmonbox y: " << str;
+    //QString str;
+    //str.setNum(pc.getXMax());
+    //qDebug() << "specmonbox x: " << pc.getXMax();
+    //str.setNum(pc.getYMax());
+    //qDebug() << "specmonbox y: " << pc.getYMax();
     _plot->configure(pc);
 }
 
