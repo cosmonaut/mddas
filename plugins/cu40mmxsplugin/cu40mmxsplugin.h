@@ -1,5 +1,5 @@
-#ifndef DETCONBASEPLUGIN_H
-#define DETCONBASEPLUGIN_H
+#ifndef CU40MMXSPLUGIN_H
+#define CU40MMXSPLUGIN_H
 
 #include <stdint.h>
 
