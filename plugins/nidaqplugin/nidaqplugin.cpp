@@ -6,12 +6,67 @@
 */
 
 #include <QDebug>
+#include <regex.h>
 
 #include "nidaqplugin.h"
 
 
 NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
-    qDebug() << "NIDAQ";
+    FILE *fp;
+    char line_buffer[255];
+    uint32_t line_number = 0;
+
+    regex_t daq_card_reg;
+    regex_t timer_card_reg;
+
+    regmatch_t daq_match[2];
+    regmatch_t timer_match[2];
+
+    if (regcomp(&daq_card_reg, DAQ_PATTERN, 0)) {
+        qDebug() << "DAQ regcomp fail";
+        throw;
+    }
+
+    if (regcomp(&timer_card_reg, TIMER_PATTERN, 0)) {
+        qDebug() << "DAQ regcomp fail";
+        throw;
+    }
+
+    fp = fopen(COM_PROC, "r");
+    if (fp == NULL) {
+        qDebug() << "Can't open " << COM_PROC;
+        throw;
+    }
+
+    /* Find comedi device file names... */
+    while (fgets(line_buffer, sizeof(line_buffer), fp)) {
+        ++line_number;
+        if (!regexec(&daq_card_reg, line_buffer, 2, daq_match, 0)) {
+            daq_dev_file = (char *)malloc(strlen(COM_PREFIX) + 2);
+            sprintf(daq_dev_file, 
+                    "%s%.*s", 
+                    COM_PREFIX, 
+                    daq_match[1].rm_eo - daq_match[1].rm_so, 
+                    &line_buffer[daq_match[1].rm_so]);
+            qDebug() << daq_dev_file;
+        }
+
+        if (!regexec(&timer_card_reg, line_buffer, 2, timer_match, 0)) {
+            timer_dev_file = (char *)malloc(strlen(COM_PREFIX) + 2);
+            sprintf(timer_dev_file, 
+                    "%s%.*s", 
+                    COM_PREFIX, 
+                    timer_match[1].rm_eo - timer_match[1].rm_so, 
+                    &line_buffer[timer_match[1].rm_so]);
+            qDebug() << timer_dev_file;
+        }
+
+    }
+
+    regfree(&daq_card_reg);
+    regfree(&timer_card_reg);
+
+    qDebug() << "NIDAQ Init";
 
     abort = false;
     pauseSampling = false;
@@ -22,10 +77,17 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     _pc->setYMin(0);
     _pc->setPMax(256);
     _pc->setPMin(0);
+
+    if (fclose(fp)) {
+        qDebug() << "Error closing " << COM_PROC;
+        throw;
+    }
 }
 
 /* close thread */
 NIDAQPlugin::~NIDAQPlugin() {
+    free(daq_dev_file);
+    free(timer_dev_file);
 }
 
 
@@ -50,7 +112,7 @@ void NIDAQPlugin::run() {
             return;
         }
         
-        qDebug() << "nidaq!";
+        //qDebug() << "nidaq!";
 
         condition.wait(&sleepM, 1);
             

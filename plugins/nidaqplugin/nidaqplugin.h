@@ -2,9 +2,19 @@
 #define NIDAQPLUGIN_H
 
 #include <stdint.h>
+#include <comedilib.h>
 
 #include "samplingthreadinterface.h"
 #include "samplingthreadplugin.h"
+
+#define COM_BUF_LEN 100000
+#define COM_N_CHAN 16
+/* comedi regex patterns */
+#define DAQ_PATTERN "\\s\\([0-9]\\):\\sni_pcidio\\s*pci\\-dio\\-32hs\\s*1"
+#define TIMER_PATTERN "\\s\\([0-9]\\):\\sni_660x\\s*PCI\\-6601\\s*1"
+/* Standard locations of comedi stuff */
+#define COM_PREFIX "/dev/comedi"
+#define COM_PROC "/proc/comedi"
 
 class NIDAQPlugin : public SamplingThreadPlugin {
     Q_OBJECT
@@ -17,6 +27,12 @@ protected:
     void run();
 
 private:
+    lsampl_t buf[COM_BUF_LEN];
+    comedi_t *dio_dev;
+    comedi_t *timer_dev;
+    char *daq_dev_file = NULL;
+    char *timer_dev_file = NULL;
+
 };
     
 

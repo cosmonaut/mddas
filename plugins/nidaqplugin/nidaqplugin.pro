@@ -2,6 +2,7 @@ TEMPLATE        = lib
 CONFIG         += plugin
 CONFIG         += thread
 INCLUDEPATH    += ../../gui ../ ../common
+LIBS           += -lcomedi
 HEADERS         = nidaqplugin.h \
                   ../common/samplingthreadplugin.h \
                   ../../gui/mddasdatainterface.h \
