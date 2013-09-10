@@ -27,6 +27,13 @@ protected:
     void run();
 
 private:
+    int ni_gpct_start_pulse_gen(comedi_t *, 
+                                unsigned,
+                                unsigned,
+                                unsigned);
+    int ni_gpct_stop_pulse_gen(comedi_t *, 
+                               unsigned);
+
     lsampl_t buf[COM_BUF_LEN];
     comedi_t *dio_dev;
     comedi_t *timer_dev;
