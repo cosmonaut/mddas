@@ -15,6 +15,7 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     FILE *fp;
     char line_buffer[255];
     uint32_t line_number = 0;
+    int err = 0;
 
     regex_t daq_card_reg;
     regex_t timer_card_reg;
@@ -66,6 +67,34 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     regfree(&daq_card_reg);
     regfree(&timer_card_reg);
 
+    /* open dio device */
+    dio_dev = comedi_open(daq_dev_file);
+    if (dio_dev == NULL) {
+        qDebug() << "Error opening dio dev file: " << daq_dev_file;
+        throw;
+    }
+    
+    /* lock the DIO device (dubdev 0) */
+    err = comedi_lock(dio_dev, 0);
+    if (err < 0) {
+        qDebug() << "Error locking comedi device, subdevice: " << daq_dev_file << 0;
+        throw;
+    }
+
+    timer_dev = comedi_open(timer_dev_file);
+    if (timer_dev == NULL) {
+        qDebug() << "Error opening timer dev file: " << timer_dev_file;
+        throw;
+    }
+
+    /* lock the timer device (dubdev 2) */
+    err = comedi_lock(timer_dev, 2);
+    if (err < 0) {
+        qDebug() << "Error locking comedi device, subdevice: " << timer_dev_file << 2;
+        throw;
+    }
+
+
     qDebug() << "NIDAQ Init";
 
     abort = false;
@@ -86,6 +115,9 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
 
 /* close thread */
 NIDAQPlugin::~NIDAQPlugin() {
+    comedi_close(dio_dev);
+    comedi_close(timer_dev);
+    
     free(daq_dev_file);
     free(timer_dev_file);
 }
