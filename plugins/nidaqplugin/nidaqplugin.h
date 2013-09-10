@@ -37,6 +37,7 @@ private:
     lsampl_t buf[COM_BUF_LEN];
     comedi_t *dio_dev;
     comedi_t *timer_dev;
+    comedi_cmd cmd;
     char *daq_dev_file = NULL;
     char *timer_dev_file = NULL;
 

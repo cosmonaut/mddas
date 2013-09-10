@@ -23,6 +23,10 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     regmatch_t daq_match[2];
     regmatch_t timer_match[2];
 
+    unsigned int chanlist[COM_N_CHAN];
+
+    qDebug() << "NIDAQ Init Starting...";
+
     if (regcomp(&daq_card_reg, DAQ_PATTERN, 0)) {
         qDebug() << "DAQ regcomp fail";
         throw;
@@ -49,7 +53,7 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
                     COM_PREFIX, 
                     daq_match[1].rm_eo - daq_match[1].rm_so, 
                     &line_buffer[daq_match[1].rm_so]);
-            qDebug() << daq_dev_file;
+            qDebug() << "DIO dev file: " << daq_dev_file;
         }
 
         if (!regexec(&timer_card_reg, line_buffer, 2, timer_match, 0)) {
@@ -59,7 +63,7 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
                     COM_PREFIX, 
                     timer_match[1].rm_eo - timer_match[1].rm_so, 
                     &line_buffer[timer_match[1].rm_so]);
-            qDebug() << timer_dev_file;
+            qDebug() << "TIMER dev file: " << timer_dev_file;
         }
 
     }
@@ -94,8 +98,62 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
         throw;
     }
 
+    /* Don't start pulse train until we acquire */
+    if (ni_gpct_stop_pulse_gen(timer_dev, 2) != 0) {
+        qDebug() << "Unable to stop pulse train...";
+        throw;
+    }
 
-    qDebug() << "NIDAQ Init";
+    /* Set device file params */
+    fcntl(comedi_fileno(dio_dev), F_SETFL, O_NONBLOCK);
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    /* This command is legit for the PCI-DIO-32HS */
+    cmd.subdev         = 0;
+    cmd.flags          = 0;
+    cmd.start_src      = TRIG_NOW;
+    cmd.start_arg      = 0;
+    cmd.scan_begin_src = TRIG_EXT;
+    cmd.scan_begin_arg = CR_INVERT; /* Read on the trailing edge */
+    cmd.convert_src    = TRIG_NOW;
+    cmd.convert_arg    = 0;
+    cmd.scan_end_src   = TRIG_COUNT;
+    cmd.scan_end_arg   = COM_N_CHAN;
+    cmd.stop_src       = TRIG_NONE;
+    cmd.stop_arg       = 0;
+
+    cmd.chanlist = chanlist;
+    cmd.chanlist_len = COM_N_CHAN;
+
+    /* Prep all channels */
+    for (int i = 0; i < COM_N_CHAN; i++) {
+        /* Note range is 0 (we are digital!) */
+        chanlist[i] = CR_PACK(0, 0, AREF_GROUND);
+    }
+
+    /* Test the command */
+    err = comedi_command_test(dio_dev, &cmd);
+    if (err != 0) {
+        qDebug() << "comedi command failed test.";
+        qDebug() << "comedi_command_test result: " <<  err;
+        int blah = comedi_get_version_code(dio_dev);
+        qDebug() << 
+            "COMEDI VER: " << 
+            (0x0000ff & (blah >> 16)) << 
+            "." << (0x0000ff & (blah >> 8)) << 
+            "." << (0x0000ff & blah);
+
+        throw;
+    }
+
+    err = comedi_dio_config(timer_dev, 1, 36, COMEDI_OUTPUT);
+    if (err != 0) {
+        qDebug() << "Failed to set timer to output. Error #: " << err;
+        throw;
+    }
+
+
 
     abort = false;
     pauseSampling = false;
@@ -111,10 +169,16 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
         qDebug() << "Error closing " << COM_PROC;
         throw;
     }
+    
+    qDebug() << "NIDAQ Init complete...";
 }
 
 /* close thread */
 NIDAQPlugin::~NIDAQPlugin() {
+    ni_gpct_stop_pulse_gen(timer_dev, 2);
+    /* stop command */
+    comedi_cancel(dio_dev, 0);
+
     comedi_close(dio_dev);
     comedi_close(timer_dev);
     
