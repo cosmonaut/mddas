@@ -17,6 +17,7 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     char line_buffer[255];
     uint32_t line_number = 0;
     int err = 0;
+    int s = 0;
 
     regex_t daq_card_reg;
     regex_t timer_card_reg;
@@ -78,6 +79,11 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
         qDebug() << "Error opening dio dev file: " << daq_dev_file;
         throw;
     }
+
+    s = comedi_get_buffer_size(dio_dev, 0);
+    qDebug() << "NIDAQ DIO_DEV buffer size: " << s;
+    s = comedi_get_max_buffer_size(dio_dev, 0);
+    qDebug() << "NIDAQ DIO_DEV max buffer size: " << s;
     
     /* lock the DIO device (dubdev 0) */
     err = comedi_lock(dio_dev, 0);
@@ -154,12 +160,11 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
         throw;
     }
 
+    /* Start Command! */
     err = comedi_command(dio_dev, &cmd);
     if (err < 0) {
         qDebug() << "Failed to start command!";
     }
-
-
 
     abort = false;
     pauseSampling = false;
@@ -196,8 +201,22 @@ NIDAQPlugin::~NIDAQPlugin() {
 void NIDAQPlugin::run() {
     int i = 0;
     int j = 0;
+    uint8_t n = 0;
     int num_photons = 0;
     int ret = 0;
+    int row = 0;
+    
+    uint16_t x = 0;
+    uint16_t y = 0;
+    uint16_t p = 0;
+
+    uint32_t samples = 0;
+    uint32_t remainder = 0;
+    uint32_t total_samples = 0;
+    uint16_t first_word = 0x0000;
+    uint16_t last_word = 0;
+    /* Array of word encodings X, Y, P */
+    uint16_t word_codes[] = {0x2000, 0x4000, 0x6000};
 
     fd_set rdset;
     struct timeval timeout;
@@ -216,6 +235,7 @@ void NIDAQPlugin::run() {
             if (ni_gpct_stop_pulse_gen(timer_dev, 2) != 0) {
                 qDebug() << "failed to pause!";
             }
+            // Need to clear total samples and memset buf to 0
             condition.wait(&mutex);
             qDebug() << "unpause";
             ni_gpct_start_pulse_gen(timer_dev, 2, STROBE_PERIOD, STROBE_HIGH_T);
@@ -251,7 +271,77 @@ void NIDAQPlugin::run() {
                 /* no data */
                 //qDebug() << "no data...";
             } else {
-                qDebug() << "Got " << ret << " samples";
+                //qDebug() << "Got " << ret << " samples";
+                samples = ret/sizeof(lsampl_t);
+                total_samples += samples;
+                /* check that we always read an integer number of
+                   samples */
+                if (ret%4 != 0) {
+                    qDebug() << "SAMPLE SIZE FAIL!";
+                    qDebug() << ret%4;
+                    qDebug() << ret;
+                }
+                //qDebug() << "samples: " << samples;
+                //qDebug() << "tot samples: " << total_samples;
+
+                i = 0;
+                /* Loop through buffer looking for first non-zero
+                   word */
+                while (((uint16_t)buf[i]) == 0) {
+                    i++;
+                    /* might all be zeros... */
+                    if (i >= samples) {
+                        break;
+                    }
+                }
+
+                //qDebug() << "zeros: " << i;
+                /* Number of potentially good words left in buffer */
+                remainder = samples - i;
+
+                /* Only continue if there was a non-zero word */
+                if (i < samples) {
+                    //qDebug() << "buf i: " << buf[i];
+                    /* Find type of first word in buffer */
+                    first_word = ((uint16_t)buf[i]) & 0xE000;
+                    switch(first_word) {
+                    case 0x2000:
+                        qDebug() << "X";
+                        x = first_word;
+                        n = 1;
+                        break;
+                    case 0x4000:
+                        qDebug() << "Y";
+                        n = 2;
+                        break;
+                    case 0x6000:
+                        qDebug() << "P";
+                        n = 0;
+                        break;
+                    default:
+                        qDebug() << first_word;
+                        break;
+                    }
+                    
+                    /* Loop through remainder after first non-zero
+                       word */
+                    for (row = i + 1; row < samples; row++) {
+                        //for (row = 0; row < ret/sizeof(lsampl_t); row++) {
+                        /* Get rid of all 0 samples -- no data */
+                        if (((uint16_t)buf[row]) != 0) {
+                            //qDebug() << (uint16_t)buf[row];
+                            if (((uint16_t)buf[row] & 0xE000) == word_codes[n]) {
+                                // got next word
+                                
+                            } else {
+                                // got bad next word
+                            }
+                            n = (n++)%3;
+                            
+                        
+                        }
+                    }
+                }
             }
         }
                 
