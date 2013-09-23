@@ -7,6 +7,7 @@
 
 #include <QDebug>
 #include <regex.h>
+#include <unistd.h>
 
 #include "nidaqplugin.h"
 
@@ -153,6 +154,11 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
         throw;
     }
 
+    err = comedi_command(dio_dev, &cmd);
+    if (err < 0) {
+        qDebug() << "Failed to start command!";
+    }
+
 
 
     abort = false;
@@ -191,6 +197,13 @@ void NIDAQPlugin::run() {
     int i = 0;
     int j = 0;
     int num_photons = 0;
+    int ret = 0;
+
+    fd_set rdset;
+    struct timeval timeout;
+
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 50000;
 
     QMutex sleepM;
     QVector<MDDASDataPoint> v;
@@ -199,7 +212,13 @@ void NIDAQPlugin::run() {
     forever {
         mutex.lock();
         if (pauseSampling) {
+            qDebug() << "pause";
+            if (ni_gpct_stop_pulse_gen(timer_dev, 2) != 0) {
+                qDebug() << "failed to pause!";
+            }
             condition.wait(&mutex);
+            qDebug() << "unpause";
+            ni_gpct_start_pulse_gen(timer_dev, 2, STROBE_PERIOD, STROBE_HIGH_T);
         }
         mutex.unlock();
 
@@ -209,6 +228,38 @@ void NIDAQPlugin::run() {
         }
         
         //qDebug() << "nidaq!";
+
+        
+        FD_ZERO(&rdset);
+        FD_SET(comedi_fileno(dio_dev), &rdset);
+        
+        ret = select(comedi_fileno(dio_dev) + 1, &rdset, NULL, NULL, &timeout);
+        if (ret < 0) {
+            qDebug() << "select() error!";
+        } else if (ret == 0) {
+            /* hit timeout, poll card */
+            ret = comedi_poll(dio_dev, 0);
+            if (ret < 0) {
+                qDebug() << "comedi_poll() error";
+            }
+        } else if (FD_ISSET(comedi_fileno(dio_dev), &rdset)) {
+            /* comedi file descriptor became ready */
+            ret = read(comedi_fileno(dio_dev), buf, sizeof(buf));
+            if (ret < 0) {
+                qDebug() << "read() error!";
+            } else if (ret == 0) {
+                /* no data */
+                //qDebug() << "no data...";
+            } else {
+                qDebug() << "Got " << ret << " samples";
+            }
+        }
+                
+            
+        
+
+
+
 
         condition.wait(&sleepM, 1);
             
