@@ -16,6 +16,10 @@
 #define COM_PREFIX "/dev/comedi"
 #define COM_PROC "/proc/comedi"
 
+/* Strobe period and high time in nanoseconds */
+#define STROBE_PERIOD 700
+#define STROBE_HIGH_T 250
+
 class NIDAQPlugin : public SamplingThreadPlugin {
     Q_OBJECT
 
