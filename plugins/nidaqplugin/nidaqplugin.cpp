@@ -205,16 +205,17 @@ void NIDAQPlugin::run() {
     int num_photons = 0;
     int ret = 0;
     int row = 0;
+    uint8_t break_sw = 0;
     
-    uint16_t x = 0;
-    uint16_t y = 0;
-    uint16_t p = 0;
+    /* Keep track of # of garbled samples */
+    uint32_t garb_samps = 0;
+    uint16_t cur_word[] = {0, 0, 0};
+    uint16_t stored_word[] = {0, 0, 0};
 
     uint32_t samples = 0;
     uint32_t remainder = 0;
     uint32_t total_samples = 0;
     uint16_t first_word = 0x0000;
-    uint16_t last_word = 0;
     /* Array of word encodings X, Y, P */
     uint16_t word_codes[] = {0x2000, 0x4000, 0x6000};
 
@@ -226,7 +227,14 @@ void NIDAQPlugin::run() {
 
     QMutex sleepM;
     QVector<MDDASDataPoint> v;
+    qDebug() << "v size: " << v.size();
+    /* garbled sample log */
+    QVector<uint16_t> gs;
     sleepM.lock();
+
+    FD_ZERO(&rdset);
+    FD_SET(comedi_fileno(dio_dev), &rdset);
+
 
     forever {
         mutex.lock();
@@ -250,23 +258,24 @@ void NIDAQPlugin::run() {
         //qDebug() << "nidaq!";
 
         
-        FD_ZERO(&rdset);
-        FD_SET(comedi_fileno(dio_dev), &rdset);
         
         ret = select(comedi_fileno(dio_dev) + 1, &rdset, NULL, NULL, &timeout);
         if (ret < 0) {
             qDebug() << "select() error!";
+            perror("select()");
         } else if (ret == 0) {
             /* hit timeout, poll card */
             ret = comedi_poll(dio_dev, 0);
             if (ret < 0) {
                 qDebug() << "comedi_poll() error";
+                comedi_perror("comedi_poll()");
             }
         } else if (FD_ISSET(comedi_fileno(dio_dev), &rdset)) {
             /* comedi file descriptor became ready */
             ret = read(comedi_fileno(dio_dev), buf, sizeof(buf));
             if (ret < 0) {
                 qDebug() << "read() error!";
+                perror("read()");
             } else if (ret == 0) {
                 /* no data */
                 //qDebug() << "no data...";
@@ -302,45 +311,120 @@ void NIDAQPlugin::run() {
                 /* Only continue if there was a non-zero word */
                 if (i < samples) {
                     //qDebug() << "buf i: " << buf[i];
-                    /* Find type of first word in buffer */
-                    first_word = ((uint16_t)buf[i]) & 0xE000;
-                    switch(first_word) {
-                    case 0x2000:
-                        qDebug() << "X";
-                        x = first_word;
-                        n = 1;
-                        break;
-                    case 0x4000:
-                        qDebug() << "Y";
-                        n = 2;
-                        break;
-                    case 0x6000:
-                        qDebug() << "P";
-                        n = 0;
-                        break;
-                    default:
-                        qDebug() << first_word;
-                        break;
+                    while (i < samples) {
+                        /* Find type of first word in buffer */
+                        // if ((uint16_t)buf[i] != 0xdfff) {
+                        //     qDebug() << (uint16_t)buf[i];
+                        // }
+                        first_word = ((uint16_t)buf[i]) & 0xE000;
+                        switch(first_word) {
+                        case 0x2000:
+                            //qDebug() << "X";
+                            //x = first_word;
+                            cur_word[0] = ((uint16_t)buf[i] & 0x1fff);
+                            n = 1;
+                            break_sw = 1;
+                            break;
+                        case 0x4000:
+                            //qDebug() << "Y";
+                            n = 2;
+                            break_sw = 1;
+                            break;
+                        case 0x6000:
+                            //qDebug() << "P";
+                            n = 0;
+                            break_sw = 1;
+                            break;
+                        default:
+                            /* Garbled data... */
+                            //QString garbhex = QString("%1").arg(buf[i], 0, 16);
+                            //qDebug() << "GARBLED DATA: " << first_word << " " << garbhex;
+                            garb_samps++;
+                            gs.append((uint16_t)buf[i] & 0xe000);
+                            break;
+                        }
+                        if (break_sw) {
+                            break;
+                        }
+                        i++;
                     }
                     
+                    /* Only add first word if data really exists... */
+                    if (i < samples) {
+                        if (n == 0) {
+                            /* We should already have X and Y */
+                            cur_word[0] = stored_word[0];
+                            cur_word[1] = stored_word[1];
+                            cur_word[2] = ((uint16_t)buf[i] & 0x1fff);
+                            v.append(MDDASDataPoint(cur_word[0], cur_word[1], cur_word[2]));
+                        } else if (n == 2) {
+                            /* We should already have X */
+                            cur_word[0] = stored_word[0];
+                            cur_word[1] = ((uint16_t)buf[i] & 0x1fff);
+                        }
+                    }
+
                     /* Loop through remainder after first non-zero
                        word */
                     for (row = i + 1; row < samples; row++) {
-                        //for (row = 0; row < ret/sizeof(lsampl_t); row++) {
                         /* Get rid of all 0 samples -- no data */
                         if (((uint16_t)buf[row]) != 0) {
                             //qDebug() << (uint16_t)buf[row];
                             if (((uint16_t)buf[row] & 0xE000) == word_codes[n]) {
-                                // got next word
+                                /* got next word */
+                                cur_word[n] = ((uint16_t)buf[row] & 0x1fff);
                                 
+                                if (n == 2) {
+                                    /* Append word */
+                                    v.append(MDDASDataPoint(cur_word[0], cur_word[1], cur_word[2]));
+                                }
+
+                                n++;
+                                n = n%3;
+                                //qDebug() << "good data?";
                             } else {
                                 // got bad next word
+                                /* Log # of bad words */
+                                /* Reset to look for X */
+                                garb_samps++;
+                                gs.append((uint16_t)buf[row] & 0xe000);
                             }
-                            n = (n++)%3;
-                            
                         
                         }
                     }
+                    
+                    /* Fill stored word here */
+                    /* Add better logic for this later? */
+                    stored_word[0] = cur_word[0];
+                    stored_word[1] = cur_word[1];
+                    stored_word[2] = cur_word[2];
+                    cur_word[0] = 0;
+                    cur_word[1] = 0;
+                    cur_word[2] = 0;
+
+                    if (v.size() > 0) {
+                        /* Send data to mddas */
+                        _di.bufEnqueue(v);
+                        v.clear();
+                        v.squeeze();
+                    }
+
+                    /* debugging tool for garbled words... */
+                    if (garb_samps > 0) {
+                        //qDebug() << "Garb samps " << garb_samps;
+                        // for (j = 0; j < gs.size(); j++) {
+                        //     QString gshex = QString("%1").arg(gs.value(j), 0, 16);
+                        //     qDebug() << gs.value(j) << "hex: " << gshex;
+                        // }
+                        //QString gshex = QString("%1").arg(gs.value(garb_samps - 1), 0, 16);
+                        //qDebug() << gs.value(garb_samps - 1) << "hex: " << gshex;
+                        // QString swx = QString("%1").arg(stored_word[0], 0, 16);
+                        // qDebug() << swx;
+                        gs.clear();
+                    }
+                    garb_samps = 0;
+                    n = 0;
+
                 }
             }
         }
