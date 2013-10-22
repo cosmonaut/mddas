@@ -767,8 +767,9 @@ void MainWindow::setPlugin(const QString &pluginStr) {
         //test.setNum(_pc->getYMax());
         //qDebug() << "mainwin ymax: " << test;
 
+        /* Start thread sampling */
         sti->sample();
-        
+
         acqLoadAct->setEnabled(false);
         unloadAction->setEnabled(true);
         _plottb->setEnabled(true);
@@ -785,9 +786,12 @@ void MainWindow::setPlugin(const QString &pluginStr) {
 }
 
 void MainWindow::configurePlots() {
+    qDebug() << "Configuring spectrum monitor...";
     _specMon->configure(*_pc);
+    qDebug() << "Configuring spectrogram...";
     _spec->configure(*_pc);
+    qDebug() << "Configuring histogram...";
     _hist->configure(*_pc);
-    qDebug() << "Plots configured";
+    qDebug() << "All plots configured";
 }
 

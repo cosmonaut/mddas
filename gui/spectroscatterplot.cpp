@@ -226,11 +226,9 @@ QSize SpectroScatterPlot::sizeHint() const {
 }
 
 void SpectroScatterPlot::configure(MDDASPlotConfig pc) {
-    // qDebug() << "specmon deleting old data";
-    delete d_curve->data();
-    // qDebug() << "specmon deleted old data";
+    /* No need to delete old data -- Qwt handles this! */
+    //delete d_curve->data();
 
-    //qDebug() << "spec x max: " << pc.getXMax();
     d_curve->setData(new SpectrogramData(pc.getXMax(), pc.getYMax()));
     //d_curve->setColorMap(new ColorMap());
     //qDebug() << "specmon made new data";
