@@ -109,7 +109,7 @@ void CU40MMXSPlugin::run() {
             num_photons = ((uint16_t *)_packet_buf)[0];
             //for (i = 1; i < CU40MMXS_PACKET_ROWS; i++) {
             /* This is the magic */
-            for (i = 1; i < num_photons; i++) {
+            for (i = 1; i < (num_photons + 1); i++) {
                 // v.append(MDDASDataPoint(((uint16_t *)_packet_buf)[i*CU40MMXS_PACKET_COLS + COLX],
                 //                         ((uint16_t *)_packet_buf)[i*CU40MMXS_PACKET_COLS + COLY],
                 //                         ((uint16_t *)_packet_buf)[i*CU40MMXS_PACKET_COLS + COLP]));
