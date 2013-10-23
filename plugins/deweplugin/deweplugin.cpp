@@ -25,6 +25,16 @@ DewePlugin::DewePlugin() : SamplingThreadPlugin() {
 }
 
 DewePlugin::~DewePlugin() {
+    /* Stop thread! */
+    mutex.lock();
+
+    abort = true;
+    condition.wakeOne();
+    mutex.unlock();
+
+    wait();
+
+    /* Destroy stuff! */
     qDebug() << "Closing dewesoft plugin...";
     if (_sock) {
         qDebug() << "deleting socket...";
@@ -32,6 +42,7 @@ DewePlugin::~DewePlugin() {
     }
     
     if (_serv_sock) {
+        qDebug() << "Deleting TCPServerSocket...";
         delete _serv_sock;
     }
     _sock = NULL;
@@ -65,11 +76,11 @@ void DewePlugin::run() {
         } else {
             /* Quit because we don't have a socket... */
             qDebug() << "DewePlugin closing due to socket error";
-            abort = 1;
+            abort = true;
         }
 
         if (abort) {
-            qDebug() << "ABORT WITHOUT SOCKET!" << QThread::currentThread();
+            qDebug() << "DewePlugin: ABORT WITHOUT SOCKET!" << QThread::currentThread();
             return;
         }
 
@@ -88,6 +99,8 @@ void DewePlugin::run() {
             qDebug() << "called abort!" << QThread::currentThread();
             return;
         }
+
+        /* Get data from DeweTron DeweSoft. */
 
         condition.wait(&sleepM, 1);
     }
