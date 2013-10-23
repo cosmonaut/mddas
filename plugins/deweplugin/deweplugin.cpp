@@ -14,24 +14,69 @@
 
 DewePlugin::DewePlugin() : SamplingThreadPlugin() {
     qDebug() << "Loading dewesoft plugin...";
+    _sock = NULL;
 
     try {
-        _sock  = new TCPServerSocket(DEWESOFT_PORT);
+        _serv_sock = new TCPServerSocket(DEWESOFT_PORT, 1);
     } catch (SocketException &e) {
         qDebug() << e.what();
+        _serv_sock = NULL;
     }
-
 }
 
 DewePlugin::~DewePlugin() {
     qDebug() << "Closing dewesoft plugin...";
+    if (_sock) {
+        qDebug() << "deleting socket...";
+        delete _sock;
+    }
+    
+    if (_serv_sock) {
+        delete _serv_sock;
+    }
+    _sock = NULL;
 }
 
 void DewePlugin::run() {
     QMutex sleepM;
     QVector<MDDASDataPoint> v;
     sleepM.lock();
+    int ret = 0;
 
+    /* Loop waiting for a client to connect */
+    forever {
+        if (_serv_sock) {
+            ret = _serv_sock->select();
+            if (ret == 1) {
+                try {
+                    _sock = _serv_sock->accept();
+                    qDebug() << "accept() client connection";
+                    QString addrstr = QString::fromStdString(_sock->getForeignAddress());
+                    qDebug() << "Address: " << addrstr;
+                    qDebug() << "Port: " << _sock->getForeignPort();
+
+                } catch (SocketException &e) {
+                    qDebug() << "FAILED TO ACCEPT?";
+                    qDebug() << e.what();
+                }
+
+                break;
+            }
+        } else {
+            /* Quit because we don't have a socket... */
+            qDebug() << "DewePlugin closing due to socket error";
+            abort = 1;
+        }
+
+        if (abort) {
+            qDebug() << "ABORT WITHOUT SOCKET!" << QThread::currentThread();
+            return;
+        }
+
+        condition.wait(&sleepM, 500);
+    }
+
+    /* Data loop. */
     forever {
         mutex.lock();
         if (pauseSampling) {

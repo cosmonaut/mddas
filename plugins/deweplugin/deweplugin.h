@@ -7,6 +7,7 @@
 #include "samplingthreadplugin.h"
 
 class TCPServerSocket;
+class TCPSocket;
 
 class DewePlugin : public SamplingThreadPlugin {
     Q_OBJECT
@@ -19,7 +20,8 @@ protected:
     void run();
 
 private:
-    TCPServerSocket *_sock;
+    TCPServerSocket *_serv_sock;
+    TCPSocket *_sock;
 
     //uint8_t *_packet_buf;
     //uint16_t _p_count;

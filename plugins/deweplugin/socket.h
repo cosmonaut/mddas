@@ -22,6 +22,7 @@
 
 #include <string>            // For string
 #include <exception>         // For exception class
+#include <sys/select.h>
 
 using namespace std;
 
@@ -97,6 +98,16 @@ public:
     unsigned short localPort = 0) throw(SocketException);
 
   /**
+   * Run select() on socket to see if we are ready to accept a
+   * connection.
+   * Returns:
+   *   -1: error
+   *   0: not ready
+   *   1: Ready to accept()
+   */
+  int select(void);
+
+  /**
    *   If WinSock, unload the WinSock DLLs; otherwise do nothing.  We ignore
    *   this in our sample client code but include it in the library for
    *   completeness.  If you are running on Windows and you are concerned
@@ -126,9 +137,11 @@ private:
   void operator=(const Socket &sock);
 
 protected:
-  int sockDesc;              // Socket descriptor
-  Socket(int type, int protocol) throw(SocketException);
-  Socket(int sockDesc);
+    int sockDesc;              // Socket descriptor
+    fd_set _rd_set;
+    struct timeval _timeout;
+    Socket(int type, int protocol) throw(SocketException);
+    Socket(int sockDesc);
 };
 
 /**

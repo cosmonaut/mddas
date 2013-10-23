@@ -97,6 +97,12 @@ Socket::Socket(int type, int protocol) throw(SocketException) {
   if ((sockDesc = socket(PF_INET, type, protocol)) < 0) {
     throw SocketException("Socket creation failed (socket())", true);
   }
+
+  FD_ZERO(&_rd_set);
+  FD_SET(sockDesc, &_rd_set);
+
+  _timeout.tv_sec = 0;
+  _timeout.tv_usec = 500000;
 }
 
 Socket::Socket(int sockDesc) {
@@ -156,6 +162,30 @@ void Socket::setLocalAddressAndPort(const string &localAddress,
   }
 }
 
+int Socket::select(void) {
+    int ret = 0;
+
+    ret = ::select(sockDesc + 1, &_rd_set, NULL, NULL, &_timeout);
+    if (ret < 0) {
+        FD_SET(sockDesc, &_rd_set);
+        return - 1;
+    } else if (ret == 0) {
+        FD_SET(sockDesc, &_rd_set);
+        return 0;
+    } else {
+        if (FD_ISSET(sockDesc, &_rd_set)) {
+            FD_SET(sockDesc, &_rd_set);
+            return 1;
+        } else {
+            FD_SET(sockDesc, &_rd_set);
+            return 0;
+        }
+    }
+
+    FD_SET(sockDesc, &_rd_set);
+    return -1;
+}
+
 void Socket::cleanUp() throw(SocketException) {
   #ifdef WIN32
     if (WSACleanup() != 0) {
@@ -173,6 +203,7 @@ unsigned short Socket::resolveService(const string &service,
   else 
     return ntohs(serv->s_port);    /* Found port (network byte order) by name */
 }
+
 
 // CommunicatingSocket Code
 
