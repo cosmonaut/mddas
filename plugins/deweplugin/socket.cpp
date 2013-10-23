@@ -110,6 +110,8 @@ Socket::Socket(int sockDesc) {
 }
 
 Socket::~Socket() {
+  FD_CLR(sockDesc, &_rd_set);
+
   #ifdef WIN32
     ::closesocket(sockDesc);
   #else
