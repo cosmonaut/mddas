@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define CU40MMXS_PACKET_SIZE 1470 
 
 Socket::Socket() :
     m_sock ( -1 )
