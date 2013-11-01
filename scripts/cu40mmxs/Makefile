@@ -1,7 +1,7 @@
 # Detector Control Gui Test Clients
 # Nico Nell
 
-all: sensor-sciences-simulator cu40mmxstest gauss
+all: sensor-sciences-simulator cu40mmxstest gauss handshake
 
 CC = gcc
 CCPP = g++
@@ -25,10 +25,13 @@ sensor-sciences-simulator: sensor-sciences-simulator.c
 cu40mmxstest: cu40mmxstest.c
 	@${CC} ${CFLAGS} -o $@  cu40mmxstest.c ${LDFLAGS}
 
+handshake: handshake.c
+	${CC} ${CFLAGS} -o $@ handshake.c ${LDFLAGS}
+
 gauss: gauss.cpp
 	@${CCPP} ${CFLAGS} -o $@  gauss.cpp ${LDFLAGS}
 
 clean:
-	@rm -f sensor-sciences-simulator cu40mmxstest gauss *.o *\~
+	@rm -f sensor-sciences-simulator cu40mmxstest gauss handshake *.o *\~
 
 .PHONY: all options clean
