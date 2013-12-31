@@ -1,7 +1,7 @@
 #ifndef CHAP10PLUGIN_H
 #define CHAP10PLUGIN_H
 
-
+#include <stdint.h>
 #include "samplingthreadinterface.h"
 #include "samplingthreadplugin.h"
 
@@ -18,7 +18,12 @@ protected:
     void run();
 
 private:
+    QVector<MDDASDataPoint> parse_data(void);
+
     UDPSocket *_sock;
+    uint16_t data_buf[4096];
+    /* Last word in data_buf */
+    uint32_t data_buf_ind;
 };
     
 

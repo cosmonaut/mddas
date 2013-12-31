@@ -12,7 +12,7 @@
 
 #define CH10_PORT 27500
 /* Why? because quakeworld was awesome. */
-#define CH10_PAK_SIZE 65536
+#define CH10_PAK_SIZE 2048
 //#define CH10_PAK_SIZE 1400
 #define CH10_HD_OFST 4
 
@@ -20,6 +20,15 @@
 #define CH10_HDR_SIZE 24
 /* Mode we've been using so far... */
 #define CH10_PCM_MODE 0x04
+/* Known Matrix size */
+#define CH10_DATA_LEN 216
+
+#define FRAME_SYNC 0xfe6b2840
+#define MAJOR_MINOR_IND 24
+
+#define X_CODE 0x2000
+#define Y_CODE 0x4000
+#define P_CODE 0x6000
 
 Chap10Plugin::Chap10Plugin() : SamplingThreadPlugin() {
     qDebug() << "Loading Chapter 10 plugin...";
@@ -36,6 +45,8 @@ Chap10Plugin::Chap10Plugin() : SamplingThreadPlugin() {
         _sock->setNonBlocking(true);
         qDebug() << "Socket non blocking...";
     }
+
+    data_buf_ind = 0;
 }
 
 Chap10Plugin::~Chap10Plugin() {
@@ -62,14 +73,14 @@ void Chap10Plugin::run() {
     QMutex sleepM;
     QVector<MDDASDataPoint> v;
     sleepM.lock();
-    int ret = 0;
+    //int ret = 0;
     /* Packet buffer */
-    uint8_t pak_buf[65536];
+    uint8_t pak_buf[CH10_PAK_SIZE];
     //uint16_t data_buf
     uint32_t *data_pt = 0;
     //uint16_t pak_size = 0;
     int32_t pak_size = 0;
-    uint8_t p_status = 1;
+    //uint8_t p_status = 1;
 
     std::string srcAddr;
     short unsigned srcPort;
@@ -97,6 +108,13 @@ void Chap10Plugin::run() {
     uint32_t ch10_ch_spec = 0;
     uint8_t ch10_pcm_mode = 0;
 
+    uint32_t matrix_word = 0;
+    uint16_t matrix_word_16 = 0;
+    uint32_t fs = 0;
+
+    uint16_t maj_f = 0;
+    uint16_t min_f = 0;
+    //uint8_t minf_of = 0;
 
     /* packet internals */
     // int32_t psize = 0;
@@ -109,12 +127,17 @@ void Chap10Plugin::run() {
     // /* pointers for casts... */
     // uint64_t* p_start_p;
 
+    
+    data_buf_ind = 0;
+
 
     /* Data loop. */
     forever {
         mutex.lock();
         if (pauseSampling) {
             condition.wait(&mutex);
+            /* Refresh data buffer index */
+            data_buf_ind = 0;
         }
         mutex.unlock();
 
@@ -194,10 +217,68 @@ void Chap10Plugin::run() {
                         //chmode = ((chspec & 0x001e0000) >> 17)
                         ch10_pcm_mode = ((ch10_ch_spec & 0x001e0000) >> 17);
                         //qDebug() << "ch10_pcm_mode: " << ch10_pcm_mode;
-                        if (ch10_pcm_mode == CH10_PCM_MODE) {
+                        if ((ch10_pcm_mode == CH10_PCM_MODE) && (ch10_dat_len == CH10_DATA_LEN)) {
                             // parse data!
-                            //qDebug() << "fake data parse!";
-                            //data_pt = (uint32_t *)(pak_buf + CH10_HD_OFST + 28);
+                            data_pt = (uint32_t *)(&pak_buf[0] + CH10_HD_OFST + 28);
+                            
+                            /* Check Frame Sync */
+                            fs = data_pt[3];
+                            if (fs != FRAME_SYNC) {
+                                QString fsAsHex = QString("%1").arg(fs, 0, 16);
+                                qDebug() << "BAD FRAME SYNC: " << fsAsHex;
+                            }
+
+                            /* Parse matrix */
+                            for (int i = 0; i < 49; i++) {
+                                //matrix_word = *(data_pt + i*4);
+                                matrix_word = data_pt[4 + i];
+                                
+                                if (i != 24) {
+                                    matrix_word_16 = ((matrix_word & 0xffff0000) >> 16);
+                                    if (matrix_word_16 != 0) {
+                                        if (data_buf_ind < 4096) {
+                                            data_buf[data_buf_ind] = matrix_word_16;
+                                            data_buf_ind++;
+                                        } else {
+                                            qDebug() << "ERROR: data_buf overflow!";
+                                        }
+                                        //qDebug() << matrix_word_16;
+                                    }
+                                    matrix_word_16 = (matrix_word & 0x0000ffff);
+                                    if (matrix_word_16 != 0) {
+                                        if (data_buf_ind < 4096) {
+                                            data_buf[data_buf_ind] = matrix_word_16;
+                                            data_buf_ind++;
+                                        } else {
+                                            qDebug() << "ERROR: data_buf overflow!";
+                                        }
+                                        //qDebug() << matrix_word_16;
+                                    }
+
+                                } else {
+                                    matrix_word_16 = ((matrix_word & 0xffff0000) >> 16);
+                                    if (matrix_word_16 != (min_f + 1)) {
+                                        qDebug() << "Skipped minor frame";
+                                        qDebug() << "current minor: " << matrix_word_16 << " last minor: " << min_f;
+                                    }
+                                    min_f = matrix_word_16;
+                                    
+                                    matrix_word_16 = (matrix_word & 0x0000ffff);
+                                    maj_f = matrix_word_16;
+                                    // Don't really care about major
+                                    // frame... if we skipped one of
+                                    // these, yikes.
+                                }
+
+                            }
+
+                            /* Parse data buffer */
+                            v = parse_data();
+                            /* pass data to gui */
+                            if (v.size() > 0) {
+                                _di.bufEnqueue(v);
+                                v.clear();
+                            }
                         }
                     }
 
@@ -223,6 +304,79 @@ void Chap10Plugin::run() {
 
         condition.wait(&sleepM, 0);
     }
+}
+
+/* Parse list of words from matrix for x, y, p detector data. */
+QVector<MDDASDataPoint> Chap10Plugin::parse_data(void) {
+    QVector<MDDASDataPoint> v;
+    uint32_t i = 0;
+    /* word search state! x: 0, y: 1, p: 2 */
+    uint8_t state = 0;
+
+    uint16_t x = 0;
+    uint16_t y = 0;
+    uint16_t p = 0;
+
+    uint16_t badness = 0;
+
+    uint32_t parsed_ind = 0;
+
+    if (data_buf_ind != 96) {
+        qDebug() << "data buf ind... " << data_buf_ind;
+    }
+
+    if (data_buf_ind > 3) {
+        for (i = 0; i < data_buf_ind; i++) {
+            if (state == 0) {
+                if ((data_buf[i] & 0xe000) == X_CODE) {
+                    x = (data_buf[i] & 0x1fff);
+                    state = 1;
+                } else {
+                    // bad code
+                    badness++;
+                    state = 0;
+                    parsed_ind = i;
+                }
+            } else if (state == 1) {
+                if ((data_buf[i] & 0xe000) == Y_CODE) {
+                    y = (data_buf[i] & 0x1fff);
+                    state = 2;
+                } else {
+                    // bad code
+                    badness++;
+                    state = 0;
+                    parsed_ind = i;
+                }
+
+            } else if (state == 2) {
+                if ((data_buf[i] & 0xe000) == P_CODE) {
+                    p = (data_buf[i] & 0x1fff);
+                    state = 0;
+                    v.append(MDDASDataPoint(x, y, p));
+                    parsed_ind = i;
+                } else {
+                    // bad code
+                    badness++;
+                    state = 0;
+                    parsed_ind = i;
+                }
+
+            } 
+
+        }
+    }
+
+    /* Shift data buf */
+    if (parsed_ind > 0) {
+        memmove(data_buf, (data_buf + parsed_ind + 1), (data_buf_ind - (parsed_ind + 1)));
+    }
+    data_buf_ind = (data_buf_ind - (parsed_ind + 1));
+
+    if (badness) {
+        qDebug() << "Bad words: " << badness;
+    }
+
+    return v;
 }
 
 Q_EXPORT_PLUGIN2(chap10plugin, Chap10Plugin);
