@@ -7,4 +7,7 @@ SUBDIRS	    = cu40mmxsplugin
 SUBDIRS += nidaqplugin
 
 # DEWESOFT plugin (NSROC DECOM TM MAGIC)
-SUBDIRS += deweplugin
+#SUBDIRS += deweplugin
+
+# Chap10 plugin (Chapter 10 ethernet telemetry reader!)
+SUBDIRS += chap10plugin
