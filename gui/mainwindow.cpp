@@ -363,13 +363,16 @@ void MainWindow::dispCountRate() {
 
     _totalCountsDisp->setNum(_totalCounts);
 
-    _avgcount += _count*10;
+    //_avgcount += (double)(((double)_count)*10.0);
+    _avgcount += _count;
     _rcount += 1;
     _count = 0;
 
     if (_rcount > 9) {
         //_infoLabel->setNum((double)_avgcount/10.0);
-        _countRateDisp->setNum((double)_avgcount/10.0);
+        //qDebug() << "_avgcount: " << _avgcount;
+        //_countRateDisp->setNum((double)_avgcount/10.0, 'f', 1);
+        _countRateDisp->setNum(_avgcount);
         _count = 0;
         _rcount = 0;
         _avgcount = 0;
