@@ -26,6 +26,8 @@ public slots:
     void activate(bool);
     //void setRefreshTimer(double);
     void clear();
+    void updateDivisors();
+    void doRebin(int);
 
 private:
     SpectroScatterPlot *_plot;
@@ -34,6 +36,7 @@ private:
     //QTimer *_refreshTimer;
     bool _active;
     QComboBox *_cmSelector;
+    QComboBox *_rebinSelector;
 };
 
 #endif // _SPECBOX_H_

@@ -79,14 +79,24 @@ SpecBox::SpecBox(QWidget *parent):
 
     scaleBox->setLayout(scaleLayout);
 
+    QGroupBox *rebinBox = new QGroupBox(this);
+    rebinBox->setTitle("Rebin Factor");
+    
+    _rebinSelector = new QComboBox(this);
+
+    QHBoxLayout *rebinLayout = new QHBoxLayout();
+    rebinLayout->addWidget(_rebinSelector);
+
+    rebinBox->setLayout(rebinLayout);
+
     connect(_cmSelector, SIGNAL( currentIndexChanged(int) ), _plot, SLOT( setColorMap(int) ));
     connect(linearButton, SIGNAL( toggled(bool) ), _plot, SLOT( setColorMapMode(bool) ));
-
-    //hbox->addWidget(new QLabel("Holding space: ", this));
-    //hbox->addWidget(_cmSelector);
+    connect(_plot, SIGNAL( divisorsChanged() ), this, SLOT( updateDivisors() ));
+    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+    
     hbox->addWidget(cmBox);
     hbox->addWidget(scaleBox);
-    //hbox->addWidget(_refreshRateSpinBox);
+    hbox->addWidget(rebinBox);
     hbox->addWidget(hFiller);
 
     layout->addWidget(_plot);
@@ -142,4 +152,24 @@ void SpecBox::replot() {
 
 bool SpecBox::isActive() {
     return _active;
+}
+
+void SpecBox::updateDivisors() {
+    int i = 0;
+    QVector<uint> divs;
+
+    /* List of possible integer divisors */
+    divs = _plot->getRebinDivisors();
+
+    _rebinSelector->clear();
+
+    for (i = 0; i < divs.size(); i++) {
+        _rebinSelector->addItem(QString::number(divs.value(i)));
+    }
+}
+
+/* Command plot to rebin. Note that this is a summing rebin */
+void SpecBox::doRebin(int index) {
+    //qDebug() << "rebin: " << index << " factor: " << (_rebinSelector->itemText(index)).toUInt();
+    _plot->rebin(_rebinSelector->itemText(index).toUInt());
 }

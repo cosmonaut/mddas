@@ -19,6 +19,7 @@
 #include "mddasdatapoint.h"
 #include "zoomer.h"
 
+static inline QVector<uint> get_divisors(uint);
 
 class SpectrogramData: public QwtMatrixRasterData {
 public:
@@ -26,10 +27,30 @@ public:
         _max_v = 0;
         x_lim = x_max;
         y_lim = y_max;
+        _rebin_max_v = 0;
+
+        this->rebin_vals = NULL;
+        this->_hash = NULL;
+        this->_x_list = NULL;
+        this->_y_list = NULL;
+
+        if (x_lim == y_lim) {
+            /* Possible to rebin (square) */
+            _can_rebin = true;
+        } else {
+            /* Cannot rebin */
+            _can_rebin = false;
+        }
+
+        /* We are not currently rebinning */
+        _rebin = false;
 
         /* Create the private array */
         /* Note: this is mapped via index magic */
         this->vals = new uint[x_max*y_max];
+        /* Create photon list arrays */
+        _x_list = new QVector<uint>;
+        _y_list = new QVector<uint>;
         /* Init the private array to 0 */
         memset(vals, 0, x_max*y_max*sizeof(unsigned int));
 
@@ -42,13 +63,29 @@ public:
     ~SpectrogramData() {
         /* IMPORTANT! Delete the vals array */
         delete[] this->vals;
-        //this->vals = 0;
+        if (this->rebin_vals) {
+            delete[] this->rebin_vals;
+        }
+        if (this->_hash) {
+            delete this->_hash;
+        }
+        if (this->_x_list) {
+            delete this->_x_list;
+        }
+        if (this->_y_list) {
+            delete this->_y_list;
+        }
     }
 
     inline void updateScale() {
         /* Update the scale to reflect the largest Z value */
         //setInterval( Qt::ZAxis, QwtInterval( 0.0, (double)*std::max_element(vals, vals + x_lim*y_lim)));
-        setInterval( Qt::ZAxis, QwtInterval( 0.1, (double)_max_v));
+
+        if (!_rebin) {
+            setInterval( Qt::ZAxis, QwtInterval( 0.1, (double)_max_v));
+        } else {
+            setInterval( Qt::ZAxis, QwtInterval( 0.1, (double)_rebin_max_v));
+        }
     }
 
     inline void append(const QVector<MDDASDataPoint> &vec) {
@@ -56,7 +93,19 @@ public:
         /* Append new z vals. */
         for (uint i = 0; i < (uint)vec.size(); i++) {
             if (((uint)vec[i].x() < x_lim) && ((uint)vec[i].y() < y_lim)) {
+                /* Keep track of photon list as well */
+                _x_list->append((uint)vec[i].x());
+                _y_list->append((uint)vec[i].y());
+
                 vals[y_lim*(uint)vec[i].x() + (uint)vec[i].y()] += 1;
+                if (_rebin) {
+                    ++rebin_vals[_rebin_size*_hash->value((uint)vec[i].x()) + _hash->value((uint)vec[i].y())];
+
+                    if (rebin_vals[_rebin_size*_hash->value((uint)vec[i].x()) + _hash->value((uint)vec[i].y())] > _rebin_max_v) {
+                        ++_rebin_max_v;
+                    }
+                }
+
                 /* This handles max amplitude without having to loop
                    over the entire matrix */
                 if (vals[y_lim*(uint)vec[i].x() + (uint)vec[i].y()] > _max_v) {
@@ -74,6 +123,7 @@ public:
 
         const QwtInterval intervalX = interval( Qt::XAxis );
         const QwtInterval intervalY = interval( Qt::YAxis );
+
         if ( intervalX.isValid() && intervalY.isValid() ) {
             rect = QRectF( intervalX.minValue(), intervalY.minValue(),
                            1.0, 1.0 );
@@ -85,8 +135,18 @@ public:
     inline void clear() {
         /* Set all values to 0. */
         memset(vals, 0, x_lim*y_lim*sizeof(unsigned int));
+        if (_rebin) {
+            memset(rebin_vals, 0, _rebin_size*_rebin_size*sizeof(unsigned int));
+            _rebin_max_v = 0;
+        }
         /* Set max amplitude to 0 */
         _max_v = 0;
+
+        /* Clear photon list */
+        _x_list->clear();
+        _x_list->squeeze();
+        _y_list->clear();
+        _y_list->squeeze();
     }        
 
     /* Overloaded value function that returns image z vals from map. */
@@ -94,25 +154,152 @@ public:
         const QwtInterval xInterval = interval( Qt::XAxis );
         const QwtInterval yInterval = interval( Qt::YAxis );
         
-        /* Use only data within the plot region */
-        if ( !( xInterval.contains(x) && yInterval.contains(y) ) )
-            return qQNaN();
 
-        if (x < x_lim && y < y_lim) {
-            return (double)vals[y_lim*(uint)x + (uint)y];
+        if (!_rebin) {
+            /* Display full resolution image */
+            /* Use only data within the plot region */
+            if ( !( xInterval.contains(x) && yInterval.contains(y) ) )
+                return qQNaN();
+
+            if (x < x_lim && y < y_lim) {
+                return (double)vals[y_lim*(uint)x + (uint)y];
+            } else {
+                /* Edge case! */
+                return (double)0.0;
+            }
         } else {
-            /* Edge case! */
-            return (double)0.0;
+            /* Display rebinned image */
+
+            /* Use only data within the plot region */
+            if ( !( xInterval.contains(x) && yInterval.contains(y) ) )
+                return qQNaN();
+
+            if (x < _rebin_size && y < _rebin_size) {
+                return (double)rebin_vals[_rebin_size*(uint)x + (uint)y];
+            } else {
+                /* Edge case! */
+                return (double)0.0;
+            }
+        }
+    }
+
+    /* Rebin the image by an integer factor. Rebinning is currently
+       only allowed for square images. */
+    inline int rebin(uint factor) {
+        uint i = 0;
+        uint px = 0;
+        uint temp_v = 0;
+
+        /* Save axis size of rebin image */
+        _rebin_size = x_lim/factor;
+
+        if (_can_rebin) {
+            if (factor > 1) {
+                /* Create rebinned image buffer */
+                if (this->rebin_vals) {
+                    delete[] this->rebin_vals;
+                    this->rebin_vals = NULL;
+                }
+                this->rebin_vals = new uint[_rebin_size*_rebin_size];
+                /* Initialize image */
+                memset(rebin_vals, 0, _rebin_size*_rebin_size*sizeof(unsigned int));
+
+                /* Create hash for rebin image. This is a lookup for
+                   rebin pixel location from full res pixel
+                   location. */
+                if (this->_hash) {
+                    delete this->_hash;
+                    this->_hash = NULL;
+                }
+                _hash = new QHash<uint, uint>;
+                /* Populate hash */
+                for (i = 0; i < x_lim; i++) {
+                    _hash->insert((uint)i, px);
+
+                    if ((i%factor) == (factor - 1)) {
+                        px++;
+                    }
+                }
+
+                /* This commented method is left as an
+                   example. Building the rebinned image is faster via
+                   a photon list. The commneted method rebuilds the
+                   rebinned image from the full resolution image but
+                   it painfully slow for a GUI... */
+                /* Populate rebin image... */
+                // for (tx = 0; tx < x_lim; tx++) {
+                //     for (ty = 0; ty < y_lim; ty++) {
+                //         this->rebin_vals[rebin_size*_hash->value(tx) + _hash->value(ty)] = this->vals[y_lim*tx + ty];
+                //         if (this->rebin_vals[rebin_size*_hash->value(tx) + _hash->value(ty)] > _rebin_max_v) {
+                //             _rebin_max_v = this->rebin_vals[rebin_size*_hash->value(tx) + _hash->value(ty)];
+                //         }
+                //     }
+                // }
+
+                /* Reset _rebin_max_v because it will be recalced */
+                _rebin_max_v = 0;
+
+                /* Populate rebin image from photon list. Note that
+                   for large images this method is faster than
+                   building the rebin from the full resolution
+                   image. */
+                for (i = 0; i < (uint)_x_list->size(); i++) {
+                    temp_v = ++this->rebin_vals[_rebin_size*_hash->value(_x_list->value(i)) + _hash->value(_y_list->value(i))];
+
+                    if (temp_v > _rebin_max_v) {
+                        _rebin_max_v = temp_v;
+                    }
+
+                }
+
+                /* We are in rebinned mode now... */
+                _rebin = true;
+
+                /* Update axes to reflect rebin image size */
+                setInterval( Qt::XAxis, QwtInterval( 0.0, _rebin_size ) );
+                setInterval( Qt::YAxis, QwtInterval( 0.0, _rebin_size ) );
+                setInterval( Qt::ZAxis, QwtInterval( 0.0, 1.0 ) );
+                updateScale();
+
+            } else {
+                /* Back to full resolution. */
+                _rebin = false;
+                if (this->rebin_vals) {
+                    delete[] this->rebin_vals;
+                    this->rebin_vals = NULL;
+                }
+
+                setInterval( Qt::XAxis, QwtInterval( 0.0, x_lim) );
+                setInterval( Qt::YAxis, QwtInterval( 0.0, y_lim ) );
+                setInterval( Qt::ZAxis, QwtInterval( 0.0, 1.0 ) );
+                updateScale();
+
+            }
+        } else {
+            /* Return an error if we can't rebin */
+            return(-1);
         }
 
-        //return (double)vals[y_lim *(uint)x + (uint)y];
+        return(0);
     }
 
 private:
     uint *vals; /* matrix of image z values */
+    /* Array that holds rebinned image */
+    uint *rebin_vals;
     uint x_lim;
     uint y_lim;
     uint _max_v;
+    bool _can_rebin;
+    bool _rebin;
+    uint _rebin_size;
+    /* Holds the largest z value in a rebinned image */
+    uint _rebin_max_v;
+    /* Lookup map for rebin image */
+    QHash<uint, uint> *_hash;
+    /* Vectors to hold photon list */
+    QVector<uint> *_x_list;
+    QVector<uint> *_y_list;
 };
 
 
@@ -123,6 +310,9 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
     setFrameStyle(QFrame::NoFrame);
     setLineWidth(0);
     //setCanvasLineWidth(0);
+
+    _x_max = x_max;
+    _y_max = y_max;
 
     /* Color map mode linear */
     _cm_mode = 0;
@@ -166,12 +356,25 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
 
     setAutoReplot(false);
 
+
     //(void) new Zoomer(canvas(), x_max);
     _z = new Zoomer((QwtPlotCanvas*)canvas(), x_max);
 
     setColorMap(0);
     
     replot();
+
+    if (x_max == y_max) {
+        _can_rebin = true;
+        _divisors = get_divisors(x_max);
+        emit divisorsChanged();
+    } else {
+        _can_rebin = false;
+        _divisors = get_divisors(1);
+        emit divisorsChanged();
+    }
+
+    _binned = false;
 }
 
 SpectroScatterPlot::~SpectroScatterPlot() {
@@ -231,9 +434,26 @@ void SpectroScatterPlot::configure(MDDASPlotConfig pc) {
 
     d_curve->setData(new SpectrogramData(pc.getXMax(), pc.getYMax()));
     //d_curve->setColorMap(new ColorMap());
-    //qDebug() << "specmon made new data";
+
+    /* Store new plot limits */
+    _x_max = pc.getXMax();
+    _y_max = pc.getYMax();
+    
     setAxisScale(xBottom, 0, pc.getXMax());
     setAxisScale(yLeft, 0, pc.getYMax());
+
+    if (_x_max == _y_max) {
+        /* Do rebin logic */
+        _can_rebin = true;
+        _divisors = get_divisors(pc.getXMax());
+        /* emit divisor change... */
+        emit divisorsChanged();
+    } else {
+        /* can't rebin... */
+        _can_rebin = false;
+        _divisors = get_divisors(1);
+        emit divisorsChanged();
+    }
 
     _z->setZoomBase();
 
@@ -374,4 +594,68 @@ void SpectroScatterPlot::setColorMapMode(bool cm_mode) {
     // }
 
     setColorMap(_cm_index);
+}
+
+QVector<uint> SpectroScatterPlot::getRebinDivisors(void) {
+    return(_divisors);
+}
+
+void SpectroScatterPlot::rebin(uint factor) {
+    SpectrogramData *data = static_cast<SpectrogramData *>( d_curve->data() );
+    int status = 0;
+
+    if (_can_rebin) {
+        if (!_binned && (factor == 1)) {
+            /* No need to rebin */
+            //qDebug() << "don't need to rebin";
+        } else {
+            /* Request a rebin */
+            status = data->rebin(factor);
+            if (status < 0) {
+                qDebug() << "ERROR: Plot failed to rebin!";
+            } else {
+                replot();
+
+                if (factor > 1) {
+                    _binned = true;
+                    this->setAxisScale(xBottom, 0, (double)(_x_max/factor));
+                    this->setAxisScale(yLeft, 0, (double)(_y_max/factor));
+                } else {
+                    /* full resolution */
+                    _binned = false;
+                    setAxisScale(xBottom, 0, _x_max);
+                    setAxisScale(yLeft, 0, _y_max);
+
+                }
+            }
+        }
+    } else {
+        qDebug() << "can't rebin!";
+    }
+
+    _z->setZoomBase();
+
+    replot();
+}
+
+/* Helper to find all divisors of an axis size */
+static inline QVector<uint> get_divisors(uint n) {
+    uint i = 2;
+    QVector<uint> divs;
+
+    /* We add 1 as an option to go back to full resolution */
+    divs.append(1);
+
+    while(i < sqrt(n)) {
+        if(n%i == 0) {
+            divs.append(i);
+        }
+
+        i++;
+    }
+    if(i*i == n) {
+        divs.append(i);
+    }
+
+    return(divs);
 }

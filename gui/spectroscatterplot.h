@@ -24,10 +24,16 @@ public:
     void configure(MDDASPlotConfig);
     void appendPoints( const QVector<MDDASDataPoint> &);
     void clear();
+    QVector<uint> getRebinDivisors(void);
 public slots:
     void replotWithScale();
     void setColorMap(int);
     void setColorMapMode(bool);
+    void rebin(uint);
+
+signals:
+    void divisorsChanged();
+
 private slots:
 
 private:
@@ -37,6 +43,11 @@ private:
     uint _cm_mode;
     /* color map index */
     uint _cm_index;
+    QVector<uint> _divisors;
+    bool _can_rebin;
+    bool _binned;
+    uint _x_max;
+    uint _y_max;
 };
 
 #endif // _SPECTROSCATTERPLOT_H_
