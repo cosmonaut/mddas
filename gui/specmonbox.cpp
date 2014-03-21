@@ -137,11 +137,18 @@ void SpecMonBox::updateDivisors() {
     /* List of possible integer divisors */
     divs = _plot->getRebinDivisors();
 
+    /* Must disconnect the combo before we change items */
+    disconnect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+
     _rebinSelector->clear();
 
     for (i = 0; i < divs.size(); i++) {
         _rebinSelector->addItem(QString::number(divs.value(i)));
     }
+
+    /* Reconnect combobox now that we're done */
+    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+    qDebug() << "update divs success";
 }
 
 /* Command plot to rebin. Note that this is a summing rebin */
