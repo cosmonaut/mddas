@@ -1,4 +1,6 @@
+#include <stdint.h>
 #include <qnumeric.h>
+#include <qwt/qwt_plot_shapeitem.h>
 #include <qwt/qwt_plot.h>
 #include <qwt/qwt_plot_grid.h>
 #include <qwt/qwt_plot_canvas.h>
@@ -22,9 +24,9 @@ public:
         y_lim = y_max;
 
         /* create private pixel array */
-        this->vals = new uint[x_max*y_max];
+        this->vals = new uint8_t[x_max*y_max];
         /* Set all pixel vals to 0 */
-        memset(vals, 0, x_max*y_max*sizeof(unsigned int));
+        memset(vals, 0, x_max*y_max*sizeof(uint8_t));
 
         /* Set plot size and z scale */
         setInterval( Qt::XAxis, QwtInterval( 0.0, x_max ) );
@@ -41,14 +43,16 @@ public:
         /* Append new z values */
         for (uint i = 0; i < (uint)vec.size(); i++) {
             if (((uint)vec[i].x() < x_lim) && ((uint)vec[i].y() < y_lim)) {
-                vals[y_lim*(uint)vec[i].x() + (uint)vec[i].y()] += 1;
+                if (!vals[y_lim*(uint)vec[i].x() + (uint)vec[i].y()]) {
+                    vals[y_lim*(uint)vec[i].x() + (uint)vec[i].y()] += 1;
+                }
             }
         }
     }
     
     inline void clear() {
         /* Set all pixel values to 0 */
-        memset(vals, 0, x_lim*y_lim*sizeof(unsigned int));
+        memset(vals, 0, x_lim*y_lim*sizeof(uint8_t));
     }        
 
     inline QRectF pixelHint(const QRectF &area) const {
@@ -85,7 +89,7 @@ public:
     }
 
 private:
-    uint *vals; /* matrix of pixels */
+    uint8_t *vals; /* matrix of pixels */
     uint x_lim;
     uint y_lim;
 };
@@ -126,6 +130,15 @@ SpectroMonitorScatterPlot::SpectroMonitorScatterPlot(QWidget *parent, uint x_max
     d_curve->attach(this);
 
     setAutoReplot(false);
+
+    /* We will use this to show spec rectangles later... */
+    // QRectF myrect(4096, 4096, 100, 100);
+    
+    // QwtPlotShapeItem *shape = new QwtPlotShapeItem;
+    // shape->setPen(Qt::white, 1.0, Qt::SolidLine);
+    // shape->setRect(myrect);
+    
+    // shape->attach(this);
 
     //(void) new Zoomer(canvas(), x_max);
     _z = new Zoomer((QwtPlotCanvas *)canvas(), x_max);
