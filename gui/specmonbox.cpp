@@ -2,6 +2,8 @@
 #include <QLabel>
 #include <QTimer>
 #include <QDoubleSpinBox>
+#include <QComboBox>
+#include <QGroupBox>
 #include "specmonbox.h"
 #include "spectromonitorscatterplot.h"
 #include "mddasplotconfig.h"
@@ -44,9 +46,34 @@ SpecMonBox::SpecMonBox(QWidget *parent):
     connect(_refreshRateSpinBox, SIGNAL( valueChanged(double) ), this, SLOT( setRefreshTimer(double) ));
     connect(_refreshTimer, SIGNAL( timeout() ), _plot, SLOT( clear() ));
 
-    hbox->addWidget(new QLabel("Refresh Rate: ", this));
-    hbox->addWidget(_refreshRateSpinBox);
+
+    QGroupBox *refreshBox = new QGroupBox(this);
+    refreshBox->setTitle("Refresh");
+
+    QHBoxLayout *refreshLayout = new QHBoxLayout();
+    refreshLayout->addWidget(new QLabel("Refresh Rate: ", this));
+    refreshLayout->addWidget(_refreshRateSpinBox);
+
+    refreshBox->setLayout(refreshLayout);
+
+
+    QGroupBox *rebinBox = new QGroupBox(this);
+    rebinBox->setTitle("Rebin Factor");
+
+    _rebinSelector = new QComboBox(this);
+
+    QHBoxLayout *rebinLayout = new QHBoxLayout();
+    rebinLayout->addWidget(_rebinSelector);
+
+    rebinBox->setLayout(rebinLayout);
+
+    connect(_plot, SIGNAL( divisorsChanged() ), this, SLOT( updateDivisors() ));
+    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+
+    hbox->addWidget(refreshBox);
+    hbox->addWidget(rebinBox);
     hbox->addWidget(hFiller);
+
 
     layout->addWidget(_plot);
     layout->addLayout(hbox);
@@ -101,4 +128,24 @@ void SpecMonBox::replot() {
 
 bool SpecMonBox::isActive() {
     return _active;
+}
+
+void SpecMonBox::updateDivisors() {
+    int i = 0;
+    QVector<uint> divs;
+
+    /* List of possible integer divisors */
+    divs = _plot->getRebinDivisors();
+
+    _rebinSelector->clear();
+
+    for (i = 0; i < divs.size(); i++) {
+        _rebinSelector->addItem(QString::number(divs.value(i)));
+    }
+}
+
+/* Command plot to rebin. Note that this is a summing rebin */
+void SpecMonBox::doRebin(int index) {
+    //qDebug() << "rebin: " << index << " factor: " << (_rebinSelector->itemText(index)).toUInt();
+    _plot->rebin(_rebinSelector->itemText(index).toUInt());
 }

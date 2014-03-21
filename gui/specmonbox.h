@@ -6,6 +6,7 @@
 QT_BEGIN_NAMESPACE
 class QDoubleSpinBox;
 class QTimer;
+class QComboBox;
 QT_END_NAMESPACE
 class SpectroMonitorScatterPlot;
 class MDDASPlotConfig;
@@ -25,6 +26,8 @@ public slots:
     void activate(bool);
     void setRefreshTimer(double);
     void clear();
+    void updateDivisors();
+    void doRebin(int);
 
 private:
     SpectroMonitorScatterPlot *_plot;
@@ -32,6 +35,7 @@ private:
     QTimer *_replotTimer;
     QTimer *_refreshTimer;
     bool _active;
+    QComboBox *_rebinSelector;
 };
 
 #endif // _SPECMONBOX_H_

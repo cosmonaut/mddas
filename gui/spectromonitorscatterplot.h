@@ -20,13 +20,24 @@ public:
     void configure(MDDASPlotConfig);
     //void appendPoints( const QVector<QPointF> &);
     void appendPoints( const QVector<MDDASDataPoint> &);
+    QVector<uint> getRebinDivisors(void);
                                                 
 public slots:
     void clear();
+    void rebin(uint);
+
+signals:
+    void divisorsChanged();
+
 
 private:
     QwtPlotSpectrogram *d_curve;
     Zoomer *_z;
+    QVector<uint> _divisors;
+    bool _can_rebin;
+    bool _binned;
+    uint _x_max;
+    uint _y_max;
 };
 
 #endif // _SPECTROMONITORSCATTERPLOT_H_
