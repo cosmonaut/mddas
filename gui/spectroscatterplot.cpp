@@ -728,13 +728,11 @@ void SpectroScatterPlot::setBox1(uint x_min, uint x_max, uint y_min, uint y_max)
 
 
     if (_binned) {
-        //ignore for now!
-        double width = (double)(x_max - x_min)/(double)_rebin_f;
-        double height = (double)(y_max - y_min)/(double)_rebin_f;
-        box1->setRect(QRectF((double)x_min/(double)_rebin_f,
-                             (double)y_min/(double)_rebin_f,
-                             width,
-                             height));
+        box1rect.setRect(x_min,
+                         y_min,
+                         x_max - x_min,
+                         y_max - y_min);
+        box1->setRect(box1rect);
     } else {
         // QRectF myrect(4096, 4096, 100, 100);
         //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
@@ -765,14 +763,11 @@ void SpectroScatterPlot::setBox2(uint x_min, uint x_max, uint y_min, uint y_max)
 
 
     if (_binned) {
-        //ignore for now!
-        double width = (double)(x_max - x_min)/(double)_rebin_f;
-        double height = (double)(y_max - y_min)/(double)_rebin_f;
-        box2->setRect(QRectF((double)x_min/(double)_rebin_f,
-                             (double)y_min/(double)_rebin_f,
-                             width,
-                             height));
-
+        box2rect.setRect(x_min,
+                         y_min,
+                         x_max - x_min,
+                         y_max - y_min);
+        box2->setRect(box2rect);
     } else {
         // QRectF myrect(4096, 4096, 100, 100);
         //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
@@ -803,14 +798,11 @@ void SpectroScatterPlot::setBox3(uint x_min, uint x_max, uint y_min, uint y_max)
 
 
     if (_binned) {
-        //ignore for now!
-        double width = (double)(x_max - x_min)/(double)_rebin_f;
-        double height = (double)(y_max - y_min)/(double)_rebin_f;
-        box3->setRect(QRectF((double)x_min/(double)_rebin_f,
-                             (double)y_min/(double)_rebin_f,
-                             width,
-                             height));
-
+        box3rect.setRect(x_min,
+                         y_min,
+                         x_max - x_min,
+                         y_max - y_min);
+        box3->setRect(box3rect);
     } else {
         // QRectF myrect(4096, 4096, 100, 100);
         //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
