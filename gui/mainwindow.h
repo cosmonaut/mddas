@@ -20,6 +20,7 @@ class MyToolBar;
 class SpecMonBox;
 class SpecBox;
 class HistBox;
+class SpecPlotBox;
 class MDDASPlotConfig;
 class MDDASDataPoint;
 class SamplingThreadInterface;
@@ -52,6 +53,7 @@ private slots:
     void saveFits();
     void makeDefaultConf();
     void setPrefs();
+    void updateSettingsFromPlot();
 
 private:
     void createActions();
@@ -82,6 +84,7 @@ private:
     QAction *_specMonAction;
     QAction *_specAction;
     QAction *_histAction;
+    QAction *_specPlotAction;
 
     /* Sampling Thread Plugin stuff */
     SamplingThreadInterface *sti;
@@ -101,6 +104,7 @@ private:
     SpecMonBox *_specMon;
     SpecBox *_spec;
     HistBox *_hist;
+    SpecPlotBox *_specPlot;
 
     QTimer *_acqTimer;
     QTimer *_rateTimer;

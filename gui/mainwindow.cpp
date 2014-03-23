@@ -8,6 +8,7 @@
 #include "specmonbox.h"
 #include "specbox.h"
 #include "histbox.h"
+#include "specplotbox.h"
 #include "numberbutton.h"
 #include "mainwindow.h"
 #include "atomic.xpm"
@@ -143,6 +144,9 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     _hist = new HistBox(this);
     _hist->setVisible(false);
 
+    _specPlot = new SpecPlotBox((*_currentSettings), this);
+    _specPlot->setVisible(false);
+
     /* Timer for reading data from the sampling thread */
     _acqTimer = new QTimer(this);
     _acqTimer->setInterval(0);
@@ -178,6 +182,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     hbox->addWidget(_specMon);
     hbox->addWidget(_spec);
     hbox->addWidget(_hist);
+    hbox->addWidget(_specPlot);
     hbox->addWidget(sideFiller);
 
     QVBoxLayout *layout = new QVBoxLayout;
@@ -205,6 +210,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _acquireAction, SLOT( setDisabled(bool) ));
 
@@ -217,12 +223,18 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     connect(_acquireAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ));
 
     connect(_acqTimer, SIGNAL( timeout() ), this, SLOT( appendData() ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( toggleAcq(bool) ));
     connect(_clearAction, SIGNAL( triggered() ), this, SLOT( clearPlots() ));
     connect(_rateTimer, SIGNAL( timeout() ), this, SLOT( dispCountRate() ));
+
+    connect(_specPlot, SIGNAL( boxSizeChanged1(uint, uint, uint, uint) ), _spec, SLOT( setBox1(uint, uint, uint, uint) ));
+    connect(_specPlot, SIGNAL( boxSizeChanged2(uint, uint, uint, uint) ), _spec, SLOT( setBox2(uint, uint, uint, uint) ));
+    connect(_specPlot, SIGNAL( boxSizeChanged3(uint, uint, uint, uint) ), _spec, SLOT( setBox3(uint, uint, uint, uint) ));
+    connect(_specPlot, SIGNAL( settingsChanged() ), this, SLOT( updateSettingsFromPlot() ));
 
     connect(_saveAction, SIGNAL( triggered() ), this, SLOT( saveFits() ));
 
@@ -327,6 +339,11 @@ void MainWindow::appendData() {
                 _hist->append(v);
             }
 
+            if (_specPlot->isVisible()) {
+                _specPlot->append(v);
+            }
+
+
         }
     }
 
@@ -385,6 +402,7 @@ void MainWindow::clearPlots() {
     _specMon->clear();
     _spec->clear();
     _hist->clear();
+    _specPlot->clear();
 
     /* There is nothing to save now */
     _saveAction->setEnabled(false);
@@ -509,19 +527,25 @@ QToolBar *MainWindow::plotToolBar() {
     _histAction = new QAction("Histogram", _plottb);
     _histAction->setCheckable(true);
 
+    _specPlotAction = new QAction("CHESS", _plottb);
+    _specPlotAction->setCheckable(true);
+
     _plottb->addAction(_specMonAction);
     _plottb->addAction(_specAction);
     _plottb->addAction(_histAction);
+    _plottb->addAction(_specPlotAction);
 
     _plotActionList->append(_specMonAction);
     _plotActionList->append(_specAction);
     _plotActionList->append(_histAction);
+    _plotActionList->append(_specPlotAction);
 
     _plottb->setEnabled(false);
     
     connect(_specMonAction, SIGNAL( toggled(bool) ), _specMon, SLOT( setVisible(bool) ));
     connect(_specAction, SIGNAL( toggled(bool) ), _spec, SLOT( setVisible(bool) ));
     connect(_histAction, SIGNAL( toggled(bool) ), _hist, SLOT( setVisible(bool) ));
+    connect(_specPlotAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( setVisible(bool) ));
 
     return _plottb;
 }
@@ -612,6 +636,24 @@ void MainWindow::setPrefs() {
 
 void MainWindow::createDefaultSettings() {
     _defaultSettings->insert("fitsImage", true);
+
+    _defaultSettings->insert("b1x", 0);
+    _defaultSettings->insert("b1y", 0);
+    _defaultSettings->insert("b1w", 0);
+    _defaultSettings->insert("b1h", 2);
+    _defaultSettings->insert("b1r", 1);
+
+    _defaultSettings->insert("b2x", 0);
+    _defaultSettings->insert("b2y", 0);
+    _defaultSettings->insert("b2w", 0);
+    _defaultSettings->insert("b2h", 2);
+    _defaultSettings->insert("b2r", 1);
+
+    _defaultSettings->insert("b3x", 0);
+    _defaultSettings->insert("b3y", 0);
+    _defaultSettings->insert("b3w", 0);
+    _defaultSettings->insert("b3h", 2);
+    _defaultSettings->insert("b3r", 1);
 }
 
 void MainWindow::makeDefaultConf() {
@@ -644,6 +686,14 @@ QMap<QString, QVariant> MainWindow::getMapFromSettings() {
     }
 
     return temp_map;
+}
+
+/* Function to set CHESS specplot settings */
+void MainWindow::updateSettingsFromPlot() {
+    QMap<QString, QVariant> m;
+
+    m = _specPlot->getSettings();
+    setSettingsFromMap(m);
 }
 
 /* Load a sampling plugin */
@@ -795,6 +845,8 @@ void MainWindow::configurePlots() {
     _spec->configure(*_pc);
     qDebug() << "Configuring histogram...";
     _hist->configure(*_pc);
+    qDebug() << "Configuring mini spec thing...";
+    _specPlot->configure(*_pc);
     qDebug() << "All plots configured";
 }
 

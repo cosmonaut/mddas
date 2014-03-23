@@ -179,3 +179,18 @@ void SpecBox::doRebin(int index) {
     //qDebug() << "rebin: " << index << " factor: " << (_rebinSelector->itemText(index)).toUInt();
     _plot->rebin(_rebinSelector->itemText(index).toUInt());
 }
+
+void SpecBox::setBox1(uint x_min, uint x_max, uint y_min, uint y_max) {
+    //qDebug() << "setting box 1!";
+    _plot->setBox1(x_min, x_max, y_min, y_max);
+}
+
+void SpecBox::setBox2(uint x_min, uint x_max, uint y_min, uint y_max) {
+    //qDebug() << "setting box 2!";
+    _plot->setBox2(x_min, x_max, y_min, y_max);
+}
+
+void SpecBox::setBox3(uint x_min, uint x_max, uint y_min, uint y_max) {
+    //qDebug() << "setting box 3!";
+    _plot->setBox3(x_min, x_max, y_min, y_max);
+}

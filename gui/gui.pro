@@ -28,6 +28,8 @@ HEADERS       = atomic.xpm \
                 scrollzoomer.h \
                 specbox.h \
                 specmonbox.h \
+                specplot.h \
+                specplotbox.h \
                 spectromonitorscatterplot.h \
                 spectroscatterplot.h \
                 zoomer.h \
@@ -49,6 +51,8 @@ SOURCES       = fits.cpp \
                 scrollzoomer.cpp \
                 specbox.cpp \
                 specmonbox.cpp \
+                specplot.cpp \
+                specplotbox.cpp \
                 spectromonitorscatterplot.cpp \
                 spectroscatterplot.cpp 
 

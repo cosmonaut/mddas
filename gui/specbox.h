@@ -28,6 +28,9 @@ public slots:
     void clear();
     void updateDivisors();
     void doRebin(int);
+    void setBox1(uint, uint, uint, uint);
+    void setBox2(uint, uint, uint, uint);
+    void setBox3(uint, uint, uint, uint);
 
 private:
     SpectroScatterPlot *_plot;

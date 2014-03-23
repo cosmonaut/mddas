@@ -4,6 +4,8 @@
 #include <qwt_plot.h>
 
 class QwtPlot;
+class QwtPlotMarker;
+class QwtPlotShapeItem;
 class QwtPlotSpectrogram;
 class QwtLinearColorMap;
 class QwtColorMap;
@@ -30,6 +32,9 @@ public slots:
     void setColorMap(int);
     void setColorMapMode(bool);
     void rebin(uint);
+    void setBox1(uint, uint, uint, uint);
+    void setBox2(uint, uint, uint, uint);
+    void setBox3(uint, uint, uint, uint);
 
 signals:
     void divisorsChanged();
@@ -37,6 +42,7 @@ signals:
 private slots:
 
 private:
+    void refreshBoxes(void);
     QwtPlotSpectrogram *d_curve;
     Zoomer *_z;
     /* colormap scale 0 linear, 1 log */
@@ -46,8 +52,17 @@ private:
     QVector<uint> _divisors;
     bool _can_rebin;
     bool _binned;
+    uint _rebin_f;
     uint _x_max;
     uint _y_max;
+
+    QwtPlotShapeItem *box1;
+    QwtPlotShapeItem *box2;
+    QwtPlotShapeItem *box3;
+
+    QRectF box1rect;
+    QRectF box2rect;
+    QRectF box3rect;
 };
 
 #endif // _SPECTROSCATTERPLOT_H_

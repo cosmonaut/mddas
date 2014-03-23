@@ -2,9 +2,12 @@
 #include <qwt_plot.h>
 #include <qwt_plot_grid.h>
 #include <qwt_plot_canvas.h>
+#include <qwt_plot_marker.h>
+#include <qwt_plot_shapeitem.h>
 #include <qwt_plot_spectrogram.h>
 #include <qwt_plot_layout.h>
 #include <qwt_plot_rescaler.h>
+#include <qwt_plot_shapeitem.h>
 #include <qwt_color_map.h>
 #include <qwt_scale_engine.h>
 #include <qwt_scale_widget.h>
@@ -305,7 +308,10 @@ private:
 
 SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max): 
     QwtPlot(parent),
-    d_curve(NULL) 
+    d_curve(NULL),
+    box1(NULL),
+    box2(NULL),
+    box3(NULL)
 {
     setFrameStyle(QFrame::NoFrame);
     setLineWidth(0);
@@ -313,6 +319,9 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
 
     _x_max = x_max;
     _y_max = y_max;
+
+    /* rebin factor 1 by default */
+    _rebin_f = 1;
 
     /* Color map mode linear */
     _cm_mode = 0;
@@ -355,6 +364,19 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
     enableAxis(QwtPlot::yRight);
 
     setAutoReplot(false);
+
+    /* Rectangles for CHESS widget */
+    box1 = new QwtPlotShapeItem();
+    box1->setPen(QColor(102, 153, 204), 1.8, Qt::SolidLine);
+    box1->attach(this);
+
+    box2 = new QwtPlotShapeItem();
+    box2->setPen(QColor(153, 204, 187), 1.8, Qt::SolidLine);
+    box2->attach(this);
+
+    box3 = new QwtPlotShapeItem();
+    box3->setPen(QColor(255, 102, 85), 1.8, Qt::SolidLine);
+    box3->attach(this);
 
 
     //(void) new Zoomer(canvas(), x_max);
@@ -607,12 +629,14 @@ void SpectroScatterPlot::rebin(uint factor) {
     if (_can_rebin) {
         if (!_binned && (factor == 1)) {
             /* No need to rebin */
+            _rebin_f = 1;
             //qDebug() << "don't need to rebin";
         } else {
             /* Request a rebin */
             status = data->rebin(factor);
             if (status < 0) {
                 qDebug() << "ERROR: Plot failed to rebin!";
+                _rebin_f = 1;
             } else {
                 replot();
 
@@ -620,22 +644,181 @@ void SpectroScatterPlot::rebin(uint factor) {
                     _binned = true;
                     this->setAxisScale(xBottom, 0, (double)(_x_max/factor));
                     this->setAxisScale(yLeft, 0, (double)(_y_max/factor));
+                    _rebin_f = factor;
+                    /* Fix boxes */
+                    //refreshBoxes();
                 } else {
                     /* full resolution */
                     _binned = false;
                     setAxisScale(xBottom, 0, _x_max);
                     setAxisScale(yLeft, 0, _y_max);
+                    _rebin_f = 1;
+                    //refreshBoxes();
 
                 }
             }
         }
     } else {
         qDebug() << "can't rebin!";
+        _rebin_f = 1;
     }
+
+    refreshBoxes();
 
     _z->setZoomBase();
 
     replot();
+}
+
+void SpectroScatterPlot::refreshBoxes(void) {
+    if (_binned) {
+        box1->setRect(QRectF(box1rect.x()/_rebin_f,
+                             box1rect.y()/_rebin_f,
+                             box1rect.width()/_rebin_f,
+                             box1rect.height()/_rebin_f));
+
+        box2->setRect(QRectF(box2rect.x()/_rebin_f,
+                             box2rect.y()/_rebin_f,
+                             box2rect.width()/_rebin_f,
+                             box2rect.height()/_rebin_f));
+
+        box3->setRect(QRectF(box3rect.x()/_rebin_f,
+                             box3rect.y()/_rebin_f,
+                             box3rect.width()/_rebin_f,
+                             box3rect.height()/_rebin_f));
+
+    } else {
+        box1->setRect(QRectF(box1rect.x(),
+                             box1rect.y(),
+                             box1rect.width(),
+                             box1rect.height()));
+
+        box2->setRect(QRectF(box2rect.x(),
+                             box2rect.y(),
+                             box2rect.width(),
+                             box2rect.height()));
+
+        box3->setRect(QRectF(box3rect.x(),
+                             box3rect.y(),
+                             box3rect.width(),
+                             box3rect.height()));
+
+    }        
+    
+    replot();
+}
+
+void SpectroScatterPlot::setBox1(uint x_min, uint x_max, uint y_min, uint y_max) {
+    /* Test limits */
+    if (x_min > _x_max) {
+        return;
+    }
+
+    if (x_max > _x_max) {
+        return;
+    }
+
+    if (y_min > _y_max) {
+        return;
+    }
+
+    if (y_max > _y_max) {
+        return;
+    }
+
+
+    if (_binned) {
+        //ignore for now!
+        double width = (double)(x_max - x_min)/(double)_rebin_f;
+        double height = (double)(y_max - y_min)/(double)_rebin_f;
+        box1->setRect(QRectF((double)x_min/(double)_rebin_f,
+                             (double)y_min/(double)_rebin_f,
+                             width,
+                             height));
+    } else {
+        // QRectF myrect(4096, 4096, 100, 100);
+        //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box1rect.setRect(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box1->setRect(box1rect);
+    }
+    
+    refreshBoxes();
+}
+
+void SpectroScatterPlot::setBox2(uint x_min, uint x_max, uint y_min, uint y_max) {
+    /* Test limits */
+    if (x_min > _x_max) {
+        return;
+    }
+
+    if (x_max > _x_max) {
+        return;
+    }
+
+    if (y_min > _y_max) {
+        return;
+    }
+
+    if (y_max > _y_max) {
+        return;
+    }
+
+
+    if (_binned) {
+        //ignore for now!
+        double width = (double)(x_max - x_min)/(double)_rebin_f;
+        double height = (double)(y_max - y_min)/(double)_rebin_f;
+        box2->setRect(QRectF((double)x_min/(double)_rebin_f,
+                             (double)y_min/(double)_rebin_f,
+                             width,
+                             height));
+
+    } else {
+        // QRectF myrect(4096, 4096, 100, 100);
+        //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box2rect.setRect(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box2->setRect(box2rect);
+    }
+
+    refreshBoxes();        
+}
+
+void SpectroScatterPlot::setBox3(uint x_min, uint x_max, uint y_min, uint y_max) {
+    /* Test limits */
+    if (x_min > _x_max) {
+        return;
+    }
+
+    if (x_max > _x_max) {
+        return;
+    }
+
+    if (y_min > _y_max) {
+        return;
+    }
+
+    if (y_max > _y_max) {
+        return;
+    }
+
+
+    if (_binned) {
+        //ignore for now!
+        double width = (double)(x_max - x_min)/(double)_rebin_f;
+        double height = (double)(y_max - y_min)/(double)_rebin_f;
+        box3->setRect(QRectF((double)x_min/(double)_rebin_f,
+                             (double)y_min/(double)_rebin_f,
+                             width,
+                             height));
+
+    } else {
+        // QRectF myrect(4096, 4096, 100, 100);
+        //QRectF r(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box3rect.setRect(x_min, y_min, (x_max - x_min), (y_max - y_min));
+        box3->setRect(box3rect);
+    }
+
+    refreshBoxes();        
 }
 
 /* Helper to find all divisors of an axis size */
