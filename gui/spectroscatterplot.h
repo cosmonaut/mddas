@@ -9,8 +9,10 @@ class QwtPlotShapeItem;
 class QwtPlotSpectrogram;
 class QwtLinearColorMap;
 class QwtColorMap;
+class QPointF;
 class MDDASPlotConfig;
 class MDDASDataPoint;
+class BoxPicker;
 class Zoomer;
 
 class SpectroScatterPlot : public QwtPlot
@@ -27,6 +29,8 @@ public:
     void appendPoints( const QVector<MDDASDataPoint> &);
     void clear();
     QVector<uint> getRebinDivisors(void);
+    void setPicker(uint);
+
 public slots:
     void replotWithScale();
     void setColorMap(int);
@@ -38,8 +42,12 @@ public slots:
 
 signals:
     void divisorsChanged();
+    void boxpos(uint, uint, uint);
 
 private slots:
+    void on1Selected(const QPointF&);
+    void on2Selected(const QPointF&);
+    void on3Selected(const QPointF&);
 
 private:
     void refreshBoxes(void);
@@ -63,6 +71,10 @@ private:
     QRectF box1rect;
     QRectF box2rect;
     QRectF box3rect;
+
+    BoxPicker *_box1Picker;
+    BoxPicker *_box2Picker;
+    BoxPicker *_box3Picker;
 };
 
 #endif // _SPECTROSCATTERPLOT_H_

@@ -13,6 +13,7 @@ TARGET = mddas
 
 
 HEADERS       = atomic.xpm \
+                boxpicker.h \
                 colormaps.h \
                 fits.h \
                 mainwindow.h \
@@ -37,7 +38,8 @@ HEADERS       = atomic.xpm \
                 save.xpm \
                 xicon.xpm
 
-SOURCES       = fits.cpp \
+SOURCES       = boxpicker.cpp \
+                fits.cpp \
                 mainwindow.cpp \
                 main.cpp \
                 mddasconfigdialog.cpp \

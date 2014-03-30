@@ -37,6 +37,7 @@ public slots:
     void alertBoxChange2(uint, uint, uint, uint);
     void alertBoxChange3(uint, uint, uint, uint);
     void configBoxes();
+    void setBoxXY(uint, uint, uint);
 
 signals:
     void boxSizeChanged1(uint, uint, uint, uint);

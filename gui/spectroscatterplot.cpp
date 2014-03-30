@@ -16,11 +16,14 @@
 #include <QDebug>
 #include <QColor>
 
+#include "boxpicker.h"
 #include "spectroscatterplot.h"
 #include "colormaps.h"
 #include "mddasplotconfig.h"
 #include "mddasdatapoint.h"
 #include "zoomer.h"
+
+
 
 static inline QVector<uint> get_divisors(uint);
 
@@ -381,6 +384,24 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
 
     //(void) new Zoomer(canvas(), x_max);
     _z = new Zoomer((QwtPlotCanvas*)canvas(), x_max);
+    _z->setEnabled(true);
+
+
+    /* picker for boxes */
+    _box1Picker = new BoxPicker(this->xBottom, this->yLeft, this->canvas());
+    connect(_box1Picker, SIGNAL(selected(const QPointF&)), this, SLOT(on1Selected(const QPointF&)));
+    _box1Picker->setColor(QColor(102, 153, 204));
+    _box1Picker->setEnabled(false);
+
+    _box2Picker = new BoxPicker(this->xBottom, this->yLeft, this->canvas());
+    connect(_box2Picker, SIGNAL(selected(const QPointF&)), this, SLOT(on2Selected(const QPointF&)));
+    _box2Picker->setColor(QColor(153, 204, 187));
+    _box2Picker->setEnabled(false);
+
+    _box3Picker = new BoxPicker(this->xBottom, this->yLeft, this->canvas());
+    connect(_box3Picker, SIGNAL(selected(const QPointF&)), this, SLOT(on3Selected(const QPointF&)));
+    _box3Picker->setColor(QColor(255, 102, 85));
+    _box3Picker->setEnabled(false);
 
     setColorMap(0);
     
@@ -401,6 +422,144 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
 
 SpectroScatterPlot::~SpectroScatterPlot() {
     //delete d_curve;
+}
+
+void SpectroScatterPlot::on1Selected(const QPointF& p) {
+    int tempx = 0;
+    int tempy = 0;
+
+    uint newx = 0;
+    uint newy = 0;
+
+    if (_binned) {
+        tempx = ((uint)p.x()*_rebin_f - (uint)(box1rect.width()/2.0));
+        tempy = ((uint)p.y()*_rebin_f - (uint)(box1rect.height()/2.0));
+    } else {
+        tempx = ((uint)p.x() - (uint)(box1rect.width()/2.0));
+        tempy = ((uint)p.y() - (uint)(box1rect.height()/2.0));
+    }
+
+    if ((tempx < 0) || tempy < 0) {
+        _box1Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    if ((tempx + (uint)(box1rect.width()/2.0)) > _x_max || (tempy + (uint)(box1rect.height()/2.0)) > _y_max) {
+        _box1Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    newx = (uint)tempx;
+    newy = (uint)tempy;
+
+    emit boxpos(1, newx, newy);
+
+    _box1Picker->setEnabled(false);
+    _z->setEnabled(true);
+}
+
+void SpectroScatterPlot::on2Selected(const QPointF& p) {
+    int tempx = 0;
+    int tempy = 0;
+
+    uint newx = 0;
+    uint newy = 0;
+
+    if (_binned) {
+        tempx = ((uint)p.x()*_rebin_f - (uint)(box2rect.width()/2.0));
+        tempy = ((uint)p.y()*_rebin_f - (uint)(box2rect.height()/2.0));
+    } else {
+        tempx = ((uint)p.x() - (uint)(box2rect.width()/2.0));
+        tempy = ((uint)p.y() - (uint)(box2rect.height()/2.0));
+    }
+
+    if ((tempx < 0) || tempy < 0) {
+        _box2Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    if ((tempx + (uint)(box2rect.width()/2.0)) > _x_max || (tempy + (uint)(box2rect.height()/2.0)) > _y_max) {
+        _box2Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    newx = (uint)tempx;
+    newy = (uint)tempy;
+
+    emit boxpos(2, newx, newy);
+
+    _box2Picker->setEnabled(false);
+    _z->setEnabled(true);
+}
+
+void SpectroScatterPlot::on3Selected(const QPointF& p) {
+    int tempx = 0;
+    int tempy = 0;
+
+    uint newx = 0;
+    uint newy = 0;
+
+    if (_binned) {
+        tempx = ((uint)p.x()*_rebin_f - (uint)(box3rect.width()/2.0));
+        tempy = ((uint)p.y()*_rebin_f - (uint)(box3rect.height()/2.0));
+    } else {
+        tempx = ((uint)p.x() - (uint)(box3rect.width()/2.0));
+        tempy = ((uint)p.y() - (uint)(box3rect.height()/2.0));
+    }
+
+    if ((tempx < 0) || tempy < 0) {
+        _box3Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    if ((tempx + (uint)(box3rect.width()/2.0)) > _x_max || (tempy + (uint)(box3rect.height()/2.0)) > _y_max) {
+        _box3Picker->setEnabled(false);
+        _z->setEnabled(true);
+        emit boxpos(0, 0, 0);
+        return;
+    }
+
+    newx = (uint)tempx;
+    newy = (uint)tempy;
+
+    emit boxpos(3, newx, newy);
+
+    _box3Picker->setEnabled(false);
+    _z->setEnabled(true);
+}
+
+void SpectroScatterPlot::setPicker(uint p) {
+    if (p == 0) {
+        _box1Picker->setEnabled(false);
+        _box2Picker->setEnabled(false);
+        _box3Picker->setEnabled(false);
+        _z->setEnabled(true);
+    } else if (p == 1) {
+        _z->setEnabled(false);
+        _box2Picker->setEnabled(false);
+        _box3Picker->setEnabled(false);
+        _box1Picker->setEnabled(true);
+    } else if (p == 2) {
+        _z->setEnabled(false);
+        _box1Picker->setEnabled(false);
+        _box3Picker->setEnabled(false);
+        _box2Picker->setEnabled(true);
+    } else if (p == 3) {
+        _z->setEnabled(false);
+        _box1Picker->setEnabled(false);
+        _box2Picker->setEnabled(false);
+        _box3Picker->setEnabled(true);
+    }
 }
 
 void SpectroScatterPlot::appendPoints(const QVector<MDDASDataPoint> &v) {

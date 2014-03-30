@@ -236,6 +236,8 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     connect(_specPlot, SIGNAL( boxSizeChanged3(uint, uint, uint, uint) ), _spec, SLOT( setBox3(uint, uint, uint, uint) ));
     connect(_specPlot, SIGNAL( settingsChanged() ), this, SLOT( updateSettingsFromPlot() ));
 
+    connect(_spec, SIGNAL( setBoxXY(uint, uint, uint) ), _specPlot, SLOT( setBoxXY(uint, uint, uint) ));
+
     connect(_saveAction, SIGNAL( triggered() ), this, SLOT( saveFits() ));
 
     //connect(_prefAct, SIGNAL( triggered() ), _configDialog, SLOT( exec() ));

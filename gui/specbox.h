@@ -7,6 +7,8 @@ QT_BEGIN_NAMESPACE
 class QDoubleSpinBox;
 class QTimer;
 class QComboBox;
+class QButtonGroup;
+class QGroupBox;
 QT_END_NAMESPACE
 class SpectroScatterPlot;
 class MDDASPlotConfig;
@@ -31,6 +33,11 @@ public slots:
     void setBox1(uint, uint, uint, uint);
     void setBox2(uint, uint, uint, uint);
     void setBox3(uint, uint, uint, uint);
+    void boxChanged(uint, uint, uint);
+    void boxButtonPressed(int);
+
+signals:
+    void setBoxXY(uint, uint, uint);
 
 private:
     SpectroScatterPlot *_plot;
@@ -40,6 +47,8 @@ private:
     bool _active;
     QComboBox *_cmSelector;
     QComboBox *_rebinSelector;
+    QButtonGroup *boxButtonGroup;
+    QGroupBox *boxBox;
 };
 
 #endif // _SPECBOX_H_

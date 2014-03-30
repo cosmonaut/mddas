@@ -220,6 +220,47 @@ void SpecPlotBox::configBoxes(void) {
     emit settingsChanged();
 }
 
+/* Signal for spectroscatterplot to set box position */
+void SpecPlotBox::setBoxXY(uint box, uint x, uint y) {
+    /* reconfig plot
+       update settings
+       update specplotconfig settings
+       emit settings changed */
+    if (box == 1) {
+        _plot1->setBox(x,
+                       (x + (*_settings)["b1w"].toUInt()),
+                       y,
+                       (y + (*_settings)["b1h"].toUInt()));
+        _plot1->setRebinFactor((*_settings)["b1r"].toUInt());
+
+        (*_settings)["b1x"] = x;
+        (*_settings)["b1y"] = y;
+
+    } else if (box == 2) {
+        _plot2->setBox(x,
+                       (x + (*_settings)["b2w"].toUInt()),
+                       y,
+                       (y + (*_settings)["b2h"].toUInt()));
+        _plot2->setRebinFactor((*_settings)["b2r"].toUInt());
+
+        (*_settings)["b2x"] = x;
+        (*_settings)["b2y"] = y;
+
+    } else if (box == 3) {
+        _plot3->setBox(x,
+                       (x + (*_settings)["b3w"].toUInt()),
+                       y,
+                       (y + (*_settings)["b3h"].toUInt()));
+        _plot3->setRebinFactor((*_settings)["b3r"].toUInt());
+
+        (*_settings)["b3x"] = x;
+        (*_settings)["b3y"] = y;
+    }
+    _specPlotConf->setSettings(*_settings);
+
+    emit settingsChanged();
+}
+
 QMap<QString, QVariant> SpecPlotBox::getSettings(void) {
     QMap<QString, QVariant> m;
     m = (*_settings);
@@ -288,22 +329,22 @@ SpecPlotConfig::SpecPlotConfig(QMap<QString, QVariant> settings, QWidget *parent
     plot3Box->setLayout(plot3HBox);
 
 
-    _plot1Widget->setParams(settings["b1x"].toUInt(), 
-                            settings["b1y"].toUInt(), 
-                            settings["b1w"].toUInt(), 
-                            settings["b1h"].toUInt(), 
+    _plot1Widget->setParams(settings["b1x"].toUInt(),
+                            settings["b1y"].toUInt(),
+                            settings["b1w"].toUInt(),
+                            settings["b1h"].toUInt(),
                             settings["b1r"].toUInt());
 
-    _plot2Widget->setParams(settings["b2x"].toUInt(), 
-                            settings["b2y"].toUInt(), 
-                            settings["b2w"].toUInt(), 
-                            settings["b2h"].toUInt(), 
+    _plot2Widget->setParams(settings["b2x"].toUInt(),
+                            settings["b2y"].toUInt(),
+                            settings["b2w"].toUInt(),
+                            settings["b2h"].toUInt(),
                             settings["b2r"].toUInt());
 
-    _plot3Widget->setParams(settings["b3x"].toUInt(), 
-                            settings["b3y"].toUInt(), 
-                            settings["b3w"].toUInt(), 
-                            settings["b3h"].toUInt(), 
+    _plot3Widget->setParams(settings["b3x"].toUInt(),
+                            settings["b3y"].toUInt(),
+                            settings["b3w"].toUInt(),
+                            settings["b3h"].toUInt(),
                             settings["b3r"].toUInt());
 
 
@@ -330,6 +371,25 @@ SpecPlotConfig::SpecPlotConfig(QMap<QString, QVariant> settings, QWidget *parent
 
 void SpecPlotConfig::setSettings(QMap<QString, QVariant> settings) {
     (*_settings) = settings;
+
+    _plot1Widget->setParams(settings["b1x"].toUInt(),
+                            settings["b1y"].toUInt(),
+                            settings["b1w"].toUInt(),
+                            settings["b1h"].toUInt(),
+                            settings["b1r"].toUInt());
+
+    _plot2Widget->setParams(settings["b2x"].toUInt(),
+                            settings["b2y"].toUInt(),
+                            settings["b2w"].toUInt(),
+                            settings["b2h"].toUInt(),
+                            settings["b2r"].toUInt());
+
+    _plot3Widget->setParams(settings["b3x"].toUInt(),
+                            settings["b3y"].toUInt(),
+                            settings["b3w"].toUInt(),
+                            settings["b3h"].toUInt(),
+                            settings["b3r"].toUInt());
+
 }
 
 void SpecPlotConfig::finish() {

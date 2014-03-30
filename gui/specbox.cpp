@@ -1,3 +1,6 @@
+#include <QButtonGroup>
+#include <QPushButton>
+#include <QCheckBox>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTimer>
@@ -89,6 +92,46 @@ SpecBox::SpecBox(QWidget *parent):
 
     rebinBox->setLayout(rebinLayout);
 
+
+
+    boxBox = new QGroupBox(this);
+    boxBox->setTitle("Box Select");
+
+    QHBoxLayout *boxLayout = new QHBoxLayout();
+
+    boxButtonGroup = new QButtonGroup(this);
+
+    QPushButton* box1Button = new QPushButton("1" , this);
+    QPushButton* box2Button = new QPushButton("2" , this);
+    QPushButton* box3Button = new QPushButton("3" , this);
+    //QPushButton* zoomButton = new QPushButton("Zoom" , this);
+
+    box1Button->setCheckable(true);
+    box2Button->setCheckable(true);
+    box3Button->setCheckable(true);
+
+    boxLayout->addWidget(box1Button);
+    boxLayout->addWidget(box2Button);
+    boxLayout->addWidget(box3Button);
+    //boxLayout->addWidget(zoomButton);
+
+    boxButtonGroup->addButton(box1Button, 1);
+    boxButtonGroup->addButton(box2Button, 2);
+    boxButtonGroup->addButton(box3Button, 3);
+        
+    boxButtonGroup->setExclusive(true);
+
+    //boxBox->addWidget(boxButtonGroup);
+    boxBox->setLayout(boxLayout);
+    
+    QHBoxLayout *boxHLayout = new QHBoxLayout();
+    boxHLayout->addWidget(boxBox);
+
+    QWidget *boxFiller = new QWidget;
+    boxFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    boxHLayout->addWidget(boxFiller);
+
     connect(_cmSelector, SIGNAL( currentIndexChanged(int) ), _plot, SLOT( setColorMap(int) ));
     connect(linearButton, SIGNAL( toggled(bool) ), _plot, SLOT( setColorMapMode(bool) ));
     connect(_plot, SIGNAL( divisorsChanged() ), this, SLOT( updateDivisors() ));
@@ -101,7 +144,11 @@ SpecBox::SpecBox(QWidget *parent):
 
     layout->addWidget(_plot);
     layout->addLayout(hbox);
+    layout->addLayout(boxHLayout);
     setLayout(layout);
+
+    connect(_plot, SIGNAL( boxpos(uint, uint, uint) ), this, SLOT( boxChanged(uint, uint, uint) ));
+    connect(boxButtonGroup, SIGNAL( buttonPressed(int) ), this, SLOT( boxButtonPressed(int) ));
 
     _plot->replot();
 
@@ -111,17 +158,46 @@ SpecBox::SpecBox(QWidget *parent):
 
 void SpecBox::activate(bool b) {
     if (b) {
+        boxChanged(0, 0, 0);
+        boxBox->setEnabled(false);
+
         // Start replot timer
         _replotTimer->start();
-        // _refreshTimer->start();
-        // _refreshRateSpinBox->setEnabled(false);
     } else {
+        boxBox->setEnabled(true);
         // stop replot timer
         _replotTimer->stop();
-        // _refreshTimer->stop();
-        // _refreshRateSpinBox->setEnabled(true);
     }
     _active = b;
+}
+
+void SpecBox::boxChanged(uint box, uint x, uint y) {
+    if (box == 0) {
+        /* turn off pickers */
+        _plot->setPicker(0);
+
+        boxButtonGroup->setExclusive(false);
+        if (boxButtonGroup->checkedId() != -1) {
+            boxButtonGroup->checkedButton()->setChecked(false);
+        }
+        boxButtonGroup->setExclusive(true);
+
+        return;
+    }
+
+    /* emit box setting for specplotbox */
+    emit setBoxXY(box, x, y);
+
+    boxButtonGroup->setExclusive(false);
+    if (boxButtonGroup->checkedId() != -1) {
+        boxButtonGroup->checkedButton()->setChecked(false);
+    }
+    boxButtonGroup->setExclusive(true);
+
+}
+
+void SpecBox::boxButtonPressed(int id) {
+    _plot->setPicker((uint)id);
 }
 
 // void SpecMonBox::setRefreshTimer(double d) {
