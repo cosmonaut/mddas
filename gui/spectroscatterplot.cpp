@@ -703,48 +703,54 @@ void SpectroScatterPlot::setColorMap(int cm) {
         break;
     }
     case 3: {
+        d_curve->setColorMap(new CubehelixColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new CubehelixColorMap(_cm_mode));
+
+        break;
+    }
+    case 4: {
         d_curve->setColorMap(new SpectroColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new SpectroColorMap(_cm_mode));
 
         break;
     }
-    case 4: {
+    case 5: {
         d_curve->setColorMap(new GISTGrayColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new GISTGrayColorMap(_cm_mode));
 
         break;
     }
-    case 5: {
+    case 6: {
         d_curve->setColorMap(new GISTYargColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new GISTYargColorMap(_cm_mode));
 
         break;
     }
-    case 6: {
+    case 7: {
         d_curve->setColorMap(new SpectralColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new SpectralColorMap(_cm_mode));
 
         break;
     }
-    case 7: {
+    case 8: {
         d_curve->setColorMap(new SpectralTwoColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new SpectralTwoColorMap(_cm_mode));
 
         break;
     }
-    case 8: {
+    case 9: {
         d_curve->setColorMap(new BoneColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new BoneColorMap(_cm_mode));
 
         break;
     }
-    case 9: {
+    case 10: {
         d_curve->setColorMap(new IshiharaColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new IshiharaColorMap(_cm_mode));
 
         break;
     }
-    case 10: {
+    case 11: {
         d_curve->setColorMap(new BobbyColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new BobbyColorMap(_cm_mode));
 

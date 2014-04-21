@@ -57,6 +57,7 @@ SpecBox::SpecBox(QWidget *parent):
     _cmSelector->addItem("gist_earth");
     _cmSelector->addItem("gist_stern");
     _cmSelector->addItem("gist_heat");
+    _cmSelector->addItem("cubehelix");
     _cmSelector->addItem("rainbow");
     _cmSelector->addItem("gray");
     _cmSelector->addItem("yarg");
