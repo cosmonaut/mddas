@@ -84,6 +84,10 @@ NIDAQPlugin::NIDAQPlugin() : SamplingThreadPlugin() {
     qDebug() << "NIDAQ DIO_DEV buffer size: " << s;
     s = comedi_get_max_buffer_size(dio_dev, 0);
     qDebug() << "NIDAQ DIO_DEV max buffer size: " << s;
+    if (s > 0) {
+        s = comedi_set_buffer_size(dio_dev, 0, s);
+        qDebug() << "NIDAQ DIO_DEV buffer size: " << s;
+    }
     
     /* lock the DIO device (dubdev 0) */
     err = comedi_lock(dio_dev, 0);

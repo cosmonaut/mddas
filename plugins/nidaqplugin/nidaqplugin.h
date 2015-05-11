@@ -7,7 +7,8 @@
 #include "samplingthreadinterface.h"
 #include "samplingthreadplugin.h"
 
-#define COM_BUF_LEN 100000
+//#define COM_BUF_LEN 100000
+#define COM_BUF_LEN 262144
 #define COM_N_CHAN 16
 /* comedi regex patterns */
 #define DAQ_PATTERN "\\s\\([0-9]\\):\\sni_pcidio\\s*pci\\-dio\\-32hs\\s*1"
