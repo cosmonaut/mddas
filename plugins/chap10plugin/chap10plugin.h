@@ -24,6 +24,9 @@ private:
     uint16_t data_buf[4096];
     /* Last word in data_buf */
     uint32_t data_buf_ind;
+    uint64_t bad_words;
+    uint64_t udp_mismatch;
+    uint64_t udp_missed;
 };
     
 

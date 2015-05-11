@@ -10,7 +10,8 @@
 #include "socket.h"
 #include "chap10plugin.h"
 
-#define CH10_PORT 27500
+//#define CH10_PORT 27500
+#define CH10_PORT 5555
 /* Why? because quakeworld was awesome. */
 #define CH10_PAK_SIZE 2048
 //#define CH10_PAK_SIZE 1400
@@ -32,6 +33,10 @@
 
 Chap10Plugin::Chap10Plugin() : SamplingThreadPlugin() {
     qDebug() << "Loading Chapter 10 plugin...";
+    
+    bad_words = 0;
+    udp_mismatch = 0;
+
     _sock = NULL;
 
     try {
@@ -116,6 +121,9 @@ void Chap10Plugin::run() {
     uint16_t min_f = 0;
     //uint8_t minf_of = 0;
 
+    /* Switch for first packet check */
+    uint8_t first_pak = 0;
+
     /* packet internals */
     // int32_t psize = 0;
     // int32_t ptype = 0;
@@ -135,9 +143,15 @@ void Chap10Plugin::run() {
     forever {
         mutex.lock();
         if (pauseSampling) {
+            qDebug() << "Parse Errors: " << bad_words;
+            qDebug() << "UDP Missed: " << udp_mismatch;
             condition.wait(&mutex);
             /* Refresh data buffer index */
             data_buf_ind = 0;
+
+            /* Refresh error counters */
+            bad_words = 0;
+            udp_mismatch = 0;
         }
         mutex.unlock();
 
@@ -162,10 +176,17 @@ void Chap10Plugin::run() {
                 udp_type = ((udp_header & 0x000000f0) >> 4);
                 //qDebug() << "udp seq: " << udp_seq << " udp_type: " << udp_type;
                 if (udp_seq != (udp_seq_last + 1)) {
-                    qDebug() << "UDP Seq mismatch, seq: " << udp_seq << " last: " << udp_seq_last;
+                    if (first_pak) {
+                        //qDebug() << "UDP Seq mismatch, seq: " << udp_seq << " last: " << udp_seq_last;
+                        udp_mismatch++;
+                        //udp_missed = udp_seq - udp_seq_last
+                    }
                 }
                 udp_seq_last = udp_seq;
                 
+                if (first_pak = 0) {
+                    first_pak = 1;
+                }
 
                 /* UDP type 0 -- not fragmented */
                 if ((udp_type == 0x00) && (pak_size > (CH10_HDR_SIZE + CH10_UDP_HDR_SIZE))) {
@@ -258,7 +279,7 @@ void Chap10Plugin::run() {
                                 } else {
                                     matrix_word_16 = ((matrix_word & 0xffff0000) >> 16);
                                     if (matrix_word_16 != (min_f + 1)) {
-                                        qDebug() << "Skipped minor frame";
+                                        //qDebug() << "Skipped minor frame";
                                         qDebug() << "current minor: " << matrix_word_16 << " last minor: " << min_f;
                                     }
                                     min_f = matrix_word_16;
@@ -321,11 +342,11 @@ QVector<MDDASDataPoint> Chap10Plugin::parse_data(void) {
 
     uint32_t parsed_ind = 0;
 
-    if (data_buf_ind != 96) {
-        qDebug() << "data buf ind... " << data_buf_ind;
-    }
+    // if (data_buf_ind != 96) {
+    //     qDebug() << "data buf ind... " << data_buf_ind;
+    // }
 
-    if (data_buf_ind > 3) {
+    if (data_buf_ind > 2) {
         for (i = 0; i < data_buf_ind; i++) {
             if (state == 0) {
                 if ((data_buf[i] & 0xe000) == X_CODE) {
@@ -368,12 +389,22 @@ QVector<MDDASDataPoint> Chap10Plugin::parse_data(void) {
 
     /* Shift data buf */
     if (parsed_ind > 0) {
-        memmove(data_buf, (data_buf + parsed_ind + 1), (data_buf_ind - (parsed_ind + 1)));
+        /* Should memmove copy 2*index because we are working with 16 bit words?! */
+        /* Also, data_buf+parsed_ind+1 == data_buf[parsed_ind + 1] ??  */
+        memmove(data_buf, (data_buf + parsed_ind + 1), 2*(data_buf_ind - (parsed_ind + 1)));
+        data_buf_ind = (data_buf_ind - (parsed_ind + 1));
     }
-    data_buf_ind = (data_buf_ind - (parsed_ind + 1));
+
+    //data_buf_ind = (data_buf_ind - (parsed_ind + 1));
+
+    if (data_buf_ind > 4095) {
+        qDebug() << "ERROR: data_buf_ind: " << data_buf_ind;
+        qDebug() << "Parsed ind: " << parsed_ind;
+    }
 
     if (badness) {
-        qDebug() << "Bad words: " << badness;
+        //qDebug() << "Bad words: " << badness;
+        bad_words += badness;
     }
 
     return v;
