@@ -115,6 +115,28 @@ bool Socket::send ( const std::string s ) const {
         }
 }
 
+//size_t sendto(int sockfd, const void *buf, size_t len, int flags,
+//               const struct sockaddr *dest_addr, socklen_t addrlen);
+bool Socket::send_to ( const std::string s, const char* addr, const int port ) const {
+    struct sockaddr_in dest; 
+    memset(&dest, 0, sizeof(dest));
+    
+    dest.sin_family = AF_INET;                       /* set the type of connection to TCP/IP */
+    //dest.sin_addr.s_addr = inet_addr("192.168.1.5"); /* set our address to any interface */
+    dest.sin_addr.s_addr = inet_addr(addr); /* set our address to any interface */
+    dest.sin_port = htons(port);                    /* set the server port number */    
+
+    int status = ::sendto ( m_sock, s.c_str(), s.size(), MSG_NOSIGNAL, (struct sockaddr *)&dest, sizeof(dest) );
+    if ( status == -1 )
+        {
+            return false;
+        }
+    else
+        {
+            return true;
+        }
+}
+
 
 int Socket::recv ( std::string& s ) const {
     char buf [ MAXRECV + 1 ];

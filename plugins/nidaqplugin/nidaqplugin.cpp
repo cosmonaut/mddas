@@ -239,11 +239,14 @@ void NIDAQPlugin::run() {
     FD_ZERO(&rdset);
     FD_SET(comedi_fileno(dio_dev), &rdset);
 
+    uint32_t invalid_words = 0;
 
     forever {
         mutex.lock();
         if (pauseSampling) {
             qDebug() << "pause";
+            qDebug() << "Invalid count: " << invalid_words;
+            invalid_words = 0;
             if (ni_gpct_stop_pulse_gen(timer_dev, 2) != 0) {
                 qDebug() << "failed to pause!";
             }
@@ -300,8 +303,10 @@ void NIDAQPlugin::run() {
                 i = 0;
                 /* Loop through buffer looking for first non-zero
                    word */
-                while (((uint16_t)buf[i]) == 0) {
+                //while (((uint16_t)buf[i]) == 0) {
+                while ((((uint16_t)buf[i]) == 0xEAAA) || ((uint16_t)buf[i]) == 0x0000) {
                     i++;
+                    invalid_words++;
                     /* might all be zeros... */
                     if (i >= samples) {
                         break;
@@ -314,7 +319,7 @@ void NIDAQPlugin::run() {
 
                 /* Only continue if there was a non-zero word */
                 if (i < samples) {
-                    //qDebug() << "buf i: " << buf[i];
+                    qDebug() << "buf i: " << buf[i];
                     while (i < samples) {
                         /* Find type of first word in buffer */
                         // if ((uint16_t)buf[i] != 0xdfff) {
@@ -338,6 +343,13 @@ void NIDAQPlugin::run() {
                             //qDebug() << "P";
                             n = 0;
                             break_sw = 1;
+                            break;
+                        case 0xE000:
+                            // The invalid word to help NSROC RF lock
+                            //invalid_words++;
+                            break;
+                        case 0x0000:
+                            // also an invalid word
                             break;
                         default:
                             /* Garbled data... */

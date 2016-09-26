@@ -3,6 +3,9 @@ CONFIG         += plugin
 CONFIG         += thread
 INCLUDEPATH    += ../../gui ../ ../common
 HEADERS         = cu40mmxsplugin.h \
+                  pak1.h \
+                  pak2.h \
+                  pak3.h \
                   socket.h \
                   ../common/samplingthreadplugin.h \
                   ../../gui/mddasdatainterface.h \

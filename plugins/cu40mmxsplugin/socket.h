@@ -32,6 +32,8 @@ public:
 
     // Data Transimission
     bool send ( const std::string ) const;
+    //bool send_to ( const std::string ) const;
+    bool send_to ( const std::string, const char*, const int ) const;
     int recv ( std::string& ) const;
     //int recvFrom();
     int recvFrom(uint8_t *, int);

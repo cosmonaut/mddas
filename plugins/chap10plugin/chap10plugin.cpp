@@ -20,6 +20,8 @@
 #define CH10_UDP_HDR_SIZE 4
 #define CH10_HDR_SIZE 24
 /* Mode we've been using so far... */
+//#define CH10_PCM_MODE 0x04 // Used this mode for CHESS 1 with Kyung
+/* Mode being output for CHESS 2 */
 #define CH10_PCM_MODE 0x04
 /* Known Matrix size */
 #define CH10_DATA_LEN 216
@@ -164,13 +166,16 @@ void Chap10Plugin::run() {
         while((pak_size = _sock->recvFrom(pak_buf, CH10_PAK_SIZE, srcAddr, srcPort)) > 0) {
             if (pak_size > 4) {
                 udp_header = *((uint32_t *)(pak_buf + 0));
-                //             udpseq = (udpheader & 0xffffff00) >> 8
+
+                // udpseq = (udpheader & 0xffffff00) >> 8
                 // udpver = udpheader & 0x0000000f
                 // udptype = udpheader & 0x000000f0
                 
                 // print("seq: %i" % udpseq)
                 // print("ver: %i" % udpver)
                 // print("type: %i" % udptype)
+
+                //qDebug() << "udp";
 
                 udp_seq = ((udp_header & 0xffffff00) >> 8);
                 udp_type = ((udp_header & 0x000000f0) >> 4);
@@ -239,6 +244,7 @@ void Chap10Plugin::run() {
                         ch10_pcm_mode = ((ch10_ch_spec & 0x001e0000) >> 17);
                         //qDebug() << "ch10_pcm_mode: " << ch10_pcm_mode;
                         if ((ch10_pcm_mode == CH10_PCM_MODE) && (ch10_dat_len == CH10_DATA_LEN)) {
+                            //qDebug() << "PARSING";
                             // parse data!
                             data_pt = (uint32_t *)(&pak_buf[0] + CH10_HD_OFST + 28);
                             
@@ -256,7 +262,9 @@ void Chap10Plugin::run() {
                                 
                                 if (i != 24) {
                                     matrix_word_16 = ((matrix_word & 0xffff0000) >> 16);
-                                    if (matrix_word_16 != 0) {
+                                    // UPDATE: Need to check for 0x0000 OR 0xEAAA here! (DIDIT)
+                                    //if (matrix_word_16 != 0) {
+                                    if ((matrix_word_16 != 0) && (matrix_word_16 != 0xEAAA)) {
                                         if (data_buf_ind < 4096) {
                                             data_buf[data_buf_ind] = matrix_word_16;
                                             data_buf_ind++;
@@ -266,7 +274,8 @@ void Chap10Plugin::run() {
                                         //qDebug() << matrix_word_16;
                                     }
                                     matrix_word_16 = (matrix_word & 0x0000ffff);
-                                    if (matrix_word_16 != 0) {
+                                    //if (matrix_word_16 != 0) {
+                                    if ((matrix_word_16 != 0) && (matrix_word_16 != 0xEAAA)) {
                                         if (data_buf_ind < 4096) {
                                             data_buf[data_buf_ind] = matrix_word_16;
                                             data_buf_ind++;
