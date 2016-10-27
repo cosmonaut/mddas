@@ -7,6 +7,11 @@ detectors in real time.
 The subfolder gui contains the core MDDAS application and the plugins
 subfolder contains all sampling plugins currently available.
 
+## Requirements
+
+In order to build MDDAS Qt (version 4), Qwt (version >= 6.1), CCFits,
+and comedi (for a plugin) are required libraries.
+
 ## Building
 
 Use the following commands to build MDDAS and all plugins. To select
@@ -15,6 +20,9 @@ unwanted plugins from the SUBDIRS variable.
 
     qmake
     make
+
+Note that the proper syntax for qmake may be 'qmake-qt4' if you have a
+system with both Qt4 and Qt5 installed.
 
 ## Installation
 
