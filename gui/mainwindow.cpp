@@ -9,6 +9,7 @@
 #include "specbox.h"
 #include "histbox.h"
 #include "specplotbox.h"
+#include "collapsedplotbox.h"
 #include "numberbutton.h"
 #include "mainwindow.h"
 #include "atomic.xpm"
@@ -136,6 +137,9 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     /* Holds and controls the monitor widget */
     _specMon = new SpecMonBox(this);
     _specMon->setVisible(false);
+    
+    _coll = new CollPlotBox(this);
+    _coll->setVisible(false);
 
     /* Holds and controls the spectrogram widget */
     _spec = new SpecBox(this);
@@ -183,6 +187,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     hbox->addWidget(_spec);
     hbox->addWidget(_hist);
     hbox->addWidget(_specPlot);
+    hbox->addWidget(_coll);
     hbox->addWidget(sideFiller);
 
     QVBoxLayout *layout = new QVBoxLayout;
@@ -210,6 +215,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
+    connect(d_monitorAction, SIGNAL( toggled(bool) ), _coll, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( activate(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _clearAction, SLOT( setDisabled(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _acquireAction, SLOT( setDisabled(bool) ));
@@ -221,6 +227,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
 
     connect(_acquireAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _specMon, SLOT( activate(bool) ));
+    connect(_acquireAction, SIGNAL( toggled(bool) ), _coll, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _spec, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _hist, SLOT( activate(bool) ));
     connect(_acquireAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( activate(bool) ));
@@ -344,6 +351,11 @@ void MainWindow::appendData() {
             if (_specPlot->isVisible()) {
                 _specPlot->append(v);
             }
+            
+            if (_coll->isVisible()) {
+                _coll->append(v);
+                _coll->replot();
+            }
 
 
         }
@@ -405,6 +417,7 @@ void MainWindow::clearPlots() {
     _spec->clear();
     _hist->clear();
     _specPlot->clear();
+    _coll->clear();
 
     /* There is nothing to save now */
     _saveAction->setEnabled(false);
@@ -531,16 +544,22 @@ QToolBar *MainWindow::plotToolBar() {
 
     _specPlotAction = new QAction("CHESS", _plottb);
     _specPlotAction->setCheckable(true);
+    
+    // Dawson 10/28 
+    _collPlotAction = new QAction("Plotty-Plot", _plottb);
+    _collPlotAction->setCheckable(true);
 
     _plottb->addAction(_specMonAction);
     _plottb->addAction(_specAction);
     _plottb->addAction(_histAction);
     _plottb->addAction(_specPlotAction);
+    _plottb->addAction(_collPlotAction);
 
     _plotActionList->append(_specMonAction);
     _plotActionList->append(_specAction);
     _plotActionList->append(_histAction);
     _plotActionList->append(_specPlotAction);
+    _plotActionList->append(_collPlotAction);
 
     _plottb->setEnabled(false);
     
@@ -548,6 +567,7 @@ QToolBar *MainWindow::plotToolBar() {
     connect(_specAction, SIGNAL( toggled(bool) ), _spec, SLOT( setVisible(bool) ));
     connect(_histAction, SIGNAL( toggled(bool) ), _hist, SLOT( setVisible(bool) ));
     connect(_specPlotAction, SIGNAL( toggled(bool) ), _specPlot, SLOT( setVisible(bool) ));
+    connect(_collPlotAction, SIGNAL( toggled(bool) ), _coll, SLOT( setVisible(bool) ));
 
     return _plottb;
 }
@@ -692,7 +712,7 @@ QMap<QString, QVariant> MainWindow::getMapFromSettings() {
 
 /* Function to set CHESS specplot settings */
 void MainWindow::updateSettingsFromPlot() {
-    QMap<QString, QVariant> m;
+    QMap<QString, QVariant> m; //? What does this syntax mean? 
 
     m = _specPlot->getSettings();
     setSettingsFromMap(m);
@@ -849,6 +869,8 @@ void MainWindow::configurePlots() {
     _hist->configure(*_pc);
     qDebug() << "Configuring mini spec thing...";
     _specPlot->configure(*_pc);
+    qDebug() << "Configuring collapse  thing...";
+    _coll->configure(*_pc);
     qDebug() << "All plots configured";
 }
 

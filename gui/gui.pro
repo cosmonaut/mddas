@@ -1,6 +1,8 @@
 # Qwt stuff
-INCLUDEPATH += /usr/include/qwt
-LIBS += -lqwt -lCCfits -lcfitsio
+# INCLUDEPATH += /usr/include/qwt
+QMAKE_RPATHDIR += /usr/local/qwt-6.1.2/lib/
+INCLUDEPATH += /usr/local/qwt-6.1.2/include
+LIBS += -L"/usr/local/qwt-6.1.2/lib/" -lqwt -lCCfits -lcfitsio
 
 CONFIG -= release
 CONFIG += debug
@@ -14,6 +16,7 @@ TARGET = mddas
 
 HEADERS       = atomic.xpm \
                 boxpicker.h \
+                collapsedplotbox.h \
                 colormaps.h \
                 fits.h \
                 mainwindow.h \
@@ -39,6 +42,7 @@ HEADERS       = atomic.xpm \
                 xicon.xpm
 
 SOURCES       = boxpicker.cpp \
+                collapsedplotbox.cpp \
                 fits.cpp \
                 mainwindow.cpp \
                 main.cpp \

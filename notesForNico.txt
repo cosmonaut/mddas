@@ -1,0 +1,3 @@
+I've been using collapsedplotbox.cpp/.h, which is a very stripped down version of specplotbox. 
+
+When I run the program neither the one I made or the original version with 3 plots comes up with any data. 

@@ -21,6 +21,7 @@ class SpecMonBox;
 class SpecBox;
 class HistBox;
 class SpecPlotBox;
+class CollPlotBox;
 class MDDASPlotConfig;
 class MDDASDataPoint;
 class SamplingThreadInterface;
@@ -85,6 +86,7 @@ private:
     QAction *_specAction;
     QAction *_histAction;
     QAction *_specPlotAction;
+    QAction *_collPlotAction;
 
     /* Sampling Thread Plugin stuff */
     SamplingThreadInterface *sti;
@@ -105,6 +107,7 @@ private:
     SpecBox *_spec;
     HistBox *_hist;
     SpecPlotBox *_specPlot;
+    CollPlotBox *_coll;
 
     QTimer *_acqTimer;
     QTimer *_rateTimer;
