@@ -21,7 +21,7 @@ class SpecMonBox;
 class SpecBox;
 class HistBox;
 class SpecPlotBox;
-class CollPlotBox;
+class CollapsedPlotBox;
 class MDDASPlotConfig;
 class MDDASDataPoint;
 class SamplingThreadInterface;
@@ -107,7 +107,7 @@ private:
     SpecBox *_spec;
     HistBox *_hist;
     SpecPlotBox *_specPlot;
-    CollPlotBox *_coll;
+    CollapsedPlotBox *_coll;
 
     QTimer *_acqTimer;
     QTimer *_rateTimer;

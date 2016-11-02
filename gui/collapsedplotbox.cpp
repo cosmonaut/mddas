@@ -1,151 +1,190 @@
 #include <QVBoxLayout>
-#include <QLabel>
+#include <QHBoxLayout>
 #include <QTimer>
-#include <QDoubleSpinBox>
-#include <QComboBox>
 #include <QGroupBox>
-#include "specplot.h"
+
+#include <QPushButton>
+#include <QLineEdit>
+#include <QLabel>
+#include <QValidator>
+#include <QMessageBox>
+#include <QComboBox>
+
 #include "collapsedplotbox.h"
-#include "spectromonitorscatterplot.h"
+#include "specplot.h"
 #include "mddasplotconfig.h"
-#include "mddasdatapoint.h"
+#include "numberbutton.h"
 
-CollPlotBox::CollPlotBox(QWidget *parent):
-    QWidget(parent) {
 
+static QVector<uint> get_divisors(uint);
+static bool ptwo(uint);
+
+
+CollapsedPlotBox::CollapsedPlotBox(QMap<QString, QVariant> settings, QWidget *parent) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
     QHBoxLayout *hbox = new QHBoxLayout();
+
+    _settings = new QMap<QString, QVariant>();
+    *_settings = settings;
 
     QWidget *hFiller = new QWidget;
     hFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    _refreshTimer = new QTimer(this);
-    _refreshTimer->setInterval(1000);
+    _plot = new SpecPlot(this, 1, 1, 1);
 
-    _plot = new SpecPlot(this, 2, 1, 1);
-
-    QwtText mon_title("Plotty-Plot");
+    QwtText plot_title("Plotty-Plot");
     QFont font = _plot->title().font();
     font.setPointSize(8);
-    mon_title.setFont(font);
-    _plot->setTitle(mon_title);
+    plot_title.setFont(font);
+    _plot->setTitle(plot_title);
 
     _replotTimer = new QTimer(this);
     _replotTimer->setInterval(200);
     _replotTimer->setSingleShot(false);
     _replotTimer->stop();
 
-    connect(_replotTimer, SIGNAL( timeout() ), _plot, SLOT( replot() ));
-//    connect(_refreshRateSpinBox, SIGNAL( valueChanged(double) ), this, SLOT( setRefreshTimer(double) ));
-    connect(_refreshTimer, SIGNAL( timeout() ), _plot, SLOT( clear() ));
+    rebinBox = new QGroupBox(this);
+    rebinBox->setTitle("Rebin Factor");
 
+    _rebinSelector = new QComboBox(this);
 
-//    QGroupBox *refreshBox = new QGroupBox(this);
-//    refreshBox->setTitle("Refresh");
+    QHBoxLayout *rebinLayout = new QHBoxLayout();
+    rebinLayout->addWidget(_rebinSelector);
 
-//    QHBoxLayout *refreshLayout = new QHBoxLayout();
-//    refreshLayout->addWidget(new QLabel("Refresh Rate: ", this));
-//    refreshLayout->addWidget(_refreshRateSpinBox);
+    rebinBox->setLayout(rebinLayout);
+    
+    updateDivisors();
 
-//    refreshBox->setLayout(refreshLayout);
+    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+    
+    hbox->addWidget(rebinBox);
 
-
-//    QGroupBox *rebinBox = new QGroupBox(this);
-//    rebinBox->setTitle("Rebin Factor");
-
-//    _rebinSelector = new QComboBox(this);
-
-//    QHBoxLayout *rebinLayout = new QHBoxLayout();
-//    rebinLayout->addWidget(_rebinSelector);
-
-//    rebinBox->setLayout(rebinLayout);
-
-//    connect(_plot, SIGNAL( divisorsChanged() ), this, SLOT( updateDivisors() ));
-//    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
-
-//    hbox->addWidget(refreshBox);
-//    hbox->addWidget(rebinBox);
-//    hbox->addWidget(hFiller);
+    connect(_replotTimer, SIGNAL( timeout() ), this, SLOT( replot() ));
 
 
     layout->addWidget(_plot);
+
+
     layout->addLayout(hbox);
     setLayout(layout);
 
     _plot->replot();
 
-    setMaximumSize(500,500);
+
+    setMaximumSize(500, 500);
 }
 
-void CollPlotBox::activate(bool b) {
+
+
+void CollapsedPlotBox::configure(MDDASPlotConfig pc) {
+    _plot->clear();
+    _plot->configure(pc);
+
+
+    /* Easy way to manually test box stuff */ 
+    _plot->setBox(0,8192,0,8192);
+    _plot->setRebinFactor(1);
+
+}
+
+void CollapsedPlotBox::activate(bool b) {
     if (b) {
-        // Start replot timer
+        rebinBox->setEnabled(false);
         _replotTimer->start();
-        _refreshTimer->start();
-//        _refreshRateSpinBox->setEnabled(false);
     } else {
-        // stop replot timer
+        /* stop replot timer */
         _replotTimer->stop();
-        _refreshTimer->stop();
-//        _refreshRateSpinBox->setEnabled(true);
+        rebinBox->setEnabled(true);
     }
     _active = b;
 }
 
-void CollPlotBox::setRefreshTimer(double d) {
-    if (_refreshTimer) {
-        _refreshTimer->setInterval(int(d*1000.0));
-    }
-}
 
-void CollPlotBox::configure(MDDASPlotConfig pc) {
-    //QString str;
-    //str.setNum(pc.getXMax());
-    //qDebug() << "specmonbox x: " << pc.getXMax();
-    //str.setNum(pc.getYMax());
-    //qDebug() << "specmonbox y: " << pc.getYMax();
-    _plot->configure(pc);
-}
-
-void CollPlotBox::clear() {
+void CollapsedPlotBox::clear() {
     _plot->clear();
 }
 
-void CollPlotBox::append(const QVector<MDDASDataPoint> &dv) {
+void CollapsedPlotBox::append(const QVector<MDDASDataPoint> &dv) {
+    /* This is where the fish lives */
     _plot->appendPoints(dv);
 }
 
-void CollPlotBox::replot() {
+void CollapsedPlotBox::replot() {
     _plot->replot();
 }
 
-bool CollPlotBox::isActive() {
+bool CollapsedPlotBox::isActive() {
     return _active;
 }
 
-void CollPlotBox::updateDivisors() {
-//    int i = 0;
-//    QVector<uint> divs;
 
-//    /* List of possible integer divisors */
-//    divs = _plot->getRebinDivisors();
-
-//    /* Must disconnect the combo before we change items */
-//    disconnect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
-
-//    _rebinSelector->clear();
-
-//    for (i = 0; i < divs.size(); i++) {
-//        _rebinSelector->addItem(QString::number(divs.value(i)));
-//    }
-
-//    /* Reconnect combobox now that we're done */
-//    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
-//    qDebug() << "update divs success";
+QMap<QString, QVariant> CollapsedPlotBox::getSettings(void) {
+    QMap<QString, QVariant> m;
+    m = (*_settings);
+    return(m);
 }
 
-/* Command plot to rebin. Note that this is a summing rebin */
-void CollPlotBox::doRebin(int index) {
-    //qDebug() << "rebin: " << index << " factor: " << (_rebinSelector->itemText(index)).toUInt();
-    //_plot->rebin(_rebinSelector->itemText(index).toUInt());
+
+
+/* Helper to find all divisors of an axis size */
+static QVector<uint> get_divisors(uint n) {
+    uint i = 2;
+    QVector<uint> divs;
+
+    /* We add 1 as an option to go back to full resolution */
+    divs.append(1);
+
+    //while(i < sqrt(n)) {
+    while(i < n/2) {
+        if(n%i == 0) {
+            divs.append(i);
+        }
+
+        i++;
+    }
+    if(i*i == n) {
+        divs.append(i);
+    }
+
+    return(divs);
 }
+
+
+/* check if a number is a power of two... */
+static bool ptwo(uint num) {
+    if (!(num & (num - 1)) && num) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void CollapsedPlotBox::updateDivisors() {
+    //TODO: Add call to _plot->setRebinFactor() 
+
+    int i = 0;
+    QVector<uint> divs;
+    
+    divs.append(1);
+    divs.append(2);
+    divs.append(4);
+    divs.append(8);
+    divs.append(16);
+
+    /* Must disconnect the combo before we change items */
+    disconnect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+
+    _rebinSelector->clear();
+
+    for (i = 0; i < divs.size(); i++) {
+        _rebinSelector->addItem(QString::number(divs.value(i)));
+    }
+
+    /* Reconnect combobox now that we're done */
+    connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
+    qDebug() << "update divs success";
+    
+    divs.clear();
+}
+
+

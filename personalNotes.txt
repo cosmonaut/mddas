@@ -1,0 +1,11 @@
+11/2/16
+
+Specplotbox is just the display for specplot. 
+
+I'm rewriting a version of specplot box that will still call specplot, but will display only one. 
+
+For CHESS, the three boxes can be dropped anywhere in the plot, and the three plots will show the collaped view inside that box. 
+
+For this one, all I care about is collapsing along one of the axes.
+
+Need the rebin factor spinbox as well. 

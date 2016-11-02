@@ -138,7 +138,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     _specMon = new SpecMonBox(this);
     _specMon->setVisible(false);
     
-    _coll = new CollPlotBox(this);
+    _coll = new CollapsedPlotBox((*_currentSettings), this);
     _coll->setVisible(false);
 
     /* Holds and controls the spectrogram widget */
@@ -354,7 +354,6 @@ void MainWindow::appendData() {
             
             if (_coll->isVisible()) {
                 _coll->append(v);
-                _coll->replot();
             }
 
 
@@ -871,6 +870,7 @@ void MainWindow::configurePlots() {
     _specPlot->configure(*_pc);
     qDebug() << "Configuring collapse  thing...";
     _coll->configure(*_pc);
+    qDebug() << "Configuring other collapse thing. (Plotty-Plot)";
     qDebug() << "All plots configured";
 }
 
