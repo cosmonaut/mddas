@@ -39,6 +39,7 @@ public slots:
 //    void configBoxes();
     void updateDivisors();
 //    void setBoxXY(uint, uint, uint);
+    void doRebin(int index);
 
 signals:
     void boxSizeChanged(uint, uint, uint, uint);

@@ -9,3 +9,5 @@ For CHESS, the three boxes can be dropped anywhere in the plot, and the three pl
 For this one, all I care about is collapsing along one of the axes.
 
 Need the rebin factor spinbox as well. 
+
+Data looks about right, just need to actually have the information come through the settings in the plugin.

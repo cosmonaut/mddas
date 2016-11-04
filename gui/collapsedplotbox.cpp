@@ -82,7 +82,9 @@ void CollapsedPlotBox::configure(MDDASPlotConfig pc) {
 
 
     /* Easy way to manually test box stuff */ 
-    _plot->setBox(0,8192,0,8192);
+    //TODO Check configure, get that from plugin, update with those sizes
+    
+    _plot->setBox(0,pc.getXMax(),0,4096);
     _plot->setRebinFactor(1);
 
 }
@@ -170,6 +172,8 @@ void CollapsedPlotBox::updateDivisors() {
     divs.append(4);
     divs.append(8);
     divs.append(16);
+    divs.append(32);
+    divs.append(64);
 
     /* Must disconnect the combo before we change items */
     disconnect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
@@ -187,4 +191,8 @@ void CollapsedPlotBox::updateDivisors() {
     divs.clear();
 }
 
-
+/* Command plot to rebin. Note that this is a summing rebin */
+void CollapsedPlotBox::doRebin(int index) {
+    //qDebug() << "rebin: " << index << " factor: " << (_rebinSelector->itemText(index)).toUInt();
+    _plot->setRebinFactor(_rebinSelector->itemText(index).toUInt());
+}
