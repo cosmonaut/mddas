@@ -58,6 +58,7 @@ CollapsedPlotBox::CollapsedPlotBox(QMap<QString, QVariant> settings, QWidget *pa
     connect(_rebinSelector, SIGNAL( currentIndexChanged(int) ), this, SLOT( doRebin(int) ));
     
     hbox->addWidget(rebinBox);
+    hbox->addWidget(hFiller);
 
     connect(_replotTimer, SIGNAL( timeout() ), this, SLOT( replot() ));
 
