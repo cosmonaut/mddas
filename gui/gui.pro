@@ -1,6 +1,8 @@
+# QT stuff
+QT += widgets
 # Qwt stuff
 INCLUDEPATH += /usr/include/qwt
-INCLUDEPATH += /usr/include/qt4/QtGui
+#INCLUDEPATH += /usr/include/qt4/QtGui
 LIBS += -lqwt -lCCfits -lcfitsio
 
 CONFIG -= release

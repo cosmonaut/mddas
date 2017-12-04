@@ -559,5 +559,5 @@ int NIDAQPlugin::ni_gpct_stop_pulse_gen(comedi_t *device, unsigned subdevice) {
     }
 }
 
-Q_EXPORT_PLUGIN2(nidaqplugin, NIDAQPlugin);
+//Q_EXPORT_PLUGIN2(nidaqplugin, NIDAQPlugin);
 

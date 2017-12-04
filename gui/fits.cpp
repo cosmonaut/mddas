@@ -71,6 +71,8 @@ int writeFitsImage(const QVector<MDDASDataPoint>* data_vec,
     /* declare auto-pointer to FITS at function scope. Ensures no resources
        leaked if something fails in dynamic allocation. */
     std::auto_ptr<FITS> pFits(0);
+    // C++11 newness
+    //std::unique_ptr<FITS> pFits(0);
 
     try {
         /* overwrite existing file if the file already exists. */        
@@ -112,7 +114,7 @@ int writeFitsImage(const QVector<MDDASDataPoint>* data_vec,
     }
 
     /* Hold the index of the current timestamp key */
-    uint t_index = 0;
+    //uint t_index = 0;
 
     qDebug() << "Filling binary table arrays";
 

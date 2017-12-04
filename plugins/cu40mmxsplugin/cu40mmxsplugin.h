@@ -10,6 +10,7 @@ class Socket;
 
 class CU40MMXSPlugin : public SamplingThreadPlugin {
     Q_OBJECT
+    Q_PLUGIN_METADATA(IID "cu40mmxsplugin")
 
 public:
     CU40MMXSPlugin();

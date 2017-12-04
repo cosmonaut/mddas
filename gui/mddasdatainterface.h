@@ -1,7 +1,8 @@
 #ifndef MDDASDATAINTERFACE_H
 #define MDDASDATAINTERFACE_H
 
-#include <QtGui>
+//#include <QtGui>
+#include <QtWidgets>
 #include "mddasdatapoint.h"
 
 QT_BEGIN_NAMESPACE

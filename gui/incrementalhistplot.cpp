@@ -55,7 +55,7 @@ IncrementalHistPlot::IncrementalHistPlot(QWidget *parent, uint x_max, uint y_max
        histogram */
     _hash = new QHash<uint, uint>();
     _hash->clear();
-    for (int i = 0; i < _p_max; i++) {
+    for (uint32_t i = 0; i < _p_max; i++) {
         _hash->insert(i, i);
     }
 
@@ -135,7 +135,7 @@ void IncrementalHistPlot::setNumBins(int n_bins) {
         n_bins = 0;
     }
 
-    if (n_bins > _p_max) {
+    if ((uint64_t)n_bins > _p_max) {
         n_bins = _p_max;
     }
 
@@ -150,7 +150,7 @@ void IncrementalHistPlot::setNumBins(int n_bins) {
     clear();
 
     /* Build a new set of intervals based on new number of bins */
-    for (uint i = 0; i < n_bins; i++) {
+    for (int i = 0; i < n_bins; i++) {
         //sample_vec[i] = QwtIntervalSample(0.0, QwtInterval(i, i+1, QwtInterval::ExcludeMaximum));
         sample_vec[i] = QwtIntervalSample(0.0, QwtInterval(interval_place, 
                                                            interval_place + interval_size, 

@@ -419,4 +419,4 @@ QVector<MDDASDataPoint> Chap10Plugin::parse_data(void) {
     return v;
 }
 
-Q_EXPORT_PLUGIN2(chap10plugin, Chap10Plugin);
+//Q_EXPORT_PLUGIN2(chap10plugin, Chap10Plugin);

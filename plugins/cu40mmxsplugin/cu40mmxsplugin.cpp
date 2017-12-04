@@ -365,5 +365,6 @@ void CU40MMXSPlugin::run() {
     }
 }
 
-Q_EXPORT_PLUGIN2(cu40mmxsplugin, CU40MMXSPlugin);
+//Q_EXPORT_PLUGIN2(cu40mmxsplugin, CU40MMXSPlugin);
+
 

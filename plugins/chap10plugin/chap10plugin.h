@@ -9,6 +9,7 @@ class UDPSocket;
 
 class Chap10Plugin : public SamplingThreadPlugin {
     Q_OBJECT
+    Q_PLUGIN_METADATA(IID "chap10plugin")
 
 public:
     Chap10Plugin();

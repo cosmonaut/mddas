@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <ctime>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>

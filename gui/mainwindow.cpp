@@ -1,4 +1,5 @@
-#include <QtGui>
+//#include <QtGui>
+#include <QtWidgets>
 
 #include "samplingthreadinterface.h"
 #include "fits.h"
@@ -18,6 +19,7 @@
 
 #define MDDAS_PLUGIN_PATH "../mddasplugins"
 
+// Toolbar
 class MyToolBar: public QToolBar {
 public:
     MyToolBar(MainWindow *parent):
@@ -30,8 +32,8 @@ public:
     }    
 };
 
-class StatusNumber: public QWidget
-{
+// Custom widget to hold labeled numbers
+class StatusNumber: public QWidget {
 public:
     StatusNumber(QWidget *parent, const QString &prefix, double val):
         QWidget(parent)
@@ -67,16 +69,14 @@ private:
     QLabel *d_number;
 };
 
+// Base mainindow of MDDAS
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     loadedPlugin = "";
 
     /* Configuration for the plots */
     _pc = new MDDASPlotConfig();
-    //_pc->getXMax();
 
     _mddasData = new QVector<MDDASDataPoint>();
-    //_mddasTimeData = new QHash<uint, double>();
-    //_mddasTimeData = new QMap<uint, double>();
     _mddasTimeData = new QVector<double>;
 
     QWidget *widget = new QWidget(this);
@@ -96,7 +96,6 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     
 
     _mddasSettings = new QSettings(QSettings::NativeFormat, QSettings::UserScope, "mddas", "default", this);
-    //_mddasSettings = new QSettings(_settingsFileName, QSettings::NativeFormat, this);
     _mddasSettings->sync();
     
     if (_mddasSettings->status() != 0) {
@@ -361,7 +360,7 @@ void MainWindow::appendData() {
         break;
     case 2:
 
-        if (_totalCounts >= _expCountsDisp->value()) {
+        if (_totalCounts >= (uint64_t)(_expCountsDisp->value())) {
             //qDebug() << "counts over!";
             emit acquisitionRun(false);
         }
@@ -467,22 +466,27 @@ QToolBar *MainWindow::toolBar() {
     font.setPointSize(8);
     _acqtb->setFont(font);
 
-    unloadAction = new QAction(QIcon(xicon_xpm), "Unload", _acqtb);
+    QPixmap xicon_pm(xicon_xpm);
+    QPixmap eye_pm(eye_xpm);
+    QPixmap atomic_pm(atomic_xpm);
+    QPixmap save_pm(save_xpm);
+    
+    unloadAction = new QAction(QIcon(xicon_pm), "Unload", _acqtb);
     unloadAction->setEnabled(false);
 
-    d_monitorAction = new QAction(QIcon(eye_xpm), "Monitor", _acqtb);
+    d_monitorAction = new QAction(QIcon(eye_pm), "Monitor", _acqtb);
     d_monitorAction->setCheckable(true);
     d_monitorAction->setEnabled(true);
 
-    _acquireAction = new QAction(QIcon(atomic_xpm), "Acquire", _acqtb);
+    _acquireAction = new QAction(QIcon(atomic_pm), "Acquire", _acqtb);
     _acquireAction->setCheckable(true);
     _acquireAction->setEnabled(true);
 
-    _saveAction = new QAction(QIcon(save_xpm), "Save", _acqtb);
+    _saveAction = new QAction(QIcon(save_pm), "Save", _acqtb);
     _saveAction->setCheckable(false);
     _saveAction->setEnabled(false);
 
-    _clearAction = new QAction(QIcon(xicon_xpm), "Clear", _acqtb);
+    _clearAction = new QAction(QIcon(xicon_pm), "Clear", _acqtb);
     _clearAction->setCheckable(false);
     _clearAction->setEnabled(true);
 
@@ -714,8 +718,8 @@ bool MainWindow::loadPlugin(QString pluginFileName) {
         pluginsDir.cdUp();
     }
 #endif
+
     /* TODO: Make this configurable or makefile config-able */
-    //pluginsDir.cd("../detconplugins");
     pluginsDir.cd(MDDAS_PLUGIN_PATH);
     //qDebug() << pluginsDir.entryList(QDir::Files);
 

@@ -23,7 +23,8 @@
 
 class NIDAQPlugin : public SamplingThreadPlugin {
     Q_OBJECT
-
+    Q_PLUGIN_METADATA(IID "nidaqplugin")
+    
 public:
     NIDAQPlugin();
     ~NIDAQPlugin();
