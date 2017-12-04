@@ -20,7 +20,7 @@ SpecMonBox::SpecMonBox(QWidget *parent):
 
     _refreshRateSpinBox = new QDoubleSpinBox(this);
     _refreshRateSpinBox->setDecimals(1);
-    _refreshRateSpinBox->setValue(1.0);
+    _refreshRateSpinBox->setValue(3.0);
     _refreshRateSpinBox->setRange(0.1, 60.0);
     _refreshRateSpinBox->setSingleStep(1.0);
 

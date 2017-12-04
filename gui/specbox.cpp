@@ -7,6 +7,7 @@
 #include <QComboBox>
 #include <QGroupBox>
 #include <QRadioButton>
+
 #include "specbox.h"
 #include "spectroscatterplot.h"
 #include "mddasplotconfig.h"
@@ -54,18 +55,19 @@ SpecBox::SpecBox(QWidget *parent):
     QHBoxLayout *cmBoxLayout = new QHBoxLayout();
 
     _cmSelector = new QComboBox(this);
+    _cmSelector->addItem("cubehelix");
     _cmSelector->addItem("gist_earth");
     _cmSelector->addItem("gist_stern");
     _cmSelector->addItem("gist_heat");
-    _cmSelector->addItem("cubehelix");
-    _cmSelector->addItem("rainbow");
+
+    //_cmSelector->addItem("rainbow");
     _cmSelector->addItem("gray");
     _cmSelector->addItem("yarg");
-    _cmSelector->addItem("spectral");
+    //_cmSelector->addItem("spectral");
     _cmSelector->addItem("spectral2");
     _cmSelector->addItem("bone");
-    _cmSelector->addItem("Ishihara");
-    _cmSelector->addItem("Spectrally Retarded");
+    //_cmSelector->addItem("Ishihara");
+    //_cmSelector->addItem("Spectrally Retarded");
 
     cmBoxLayout->addWidget(_cmSelector);
     cmBox->setLayout(cmBoxLayout);
@@ -74,8 +76,9 @@ SpecBox::SpecBox(QWidget *parent):
     scaleBox->setTitle("Scale");
 
     QRadioButton *linearButton = new QRadioButton("Linear");
-    linearButton->setChecked(true);
+    linearButton->setChecked(false);
     QRadioButton *logButton = new QRadioButton("Log");
+    //logButton->setChecked(true);
 
     QHBoxLayout *scaleLayout = new QHBoxLayout();
     scaleLayout->addWidget(linearButton);
@@ -151,7 +154,13 @@ SpecBox::SpecBox(QWidget *parent):
     connect(_plot, SIGNAL( boxpos(uint, uint, uint) ), this, SLOT( boxChanged(uint, uint, uint) ));
     connect(boxButtonGroup, SIGNAL( buttonPressed(int) ), this, SLOT( boxButtonPressed(int) ));
 
+    // Log scale by default...
+    linearButton->setChecked(true);
+    linearButton->setChecked(false);
+    logButton->setChecked(true);
+
     _plot->replot();
+
 
     //setFixedSize(500,500);
     setMaximumSize(500,500);

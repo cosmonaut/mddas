@@ -203,6 +203,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent) {
     addToolBar(plotToolBar());
     addToolBar(Qt::BottomToolBarArea, statToolBar());
 
+    // Actions!
     connect(d_monitorAction, SIGNAL( toggled(bool) ), this, SLOT( threadStartPause(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), unloadAction, SLOT( setDisabled(bool) ));
     connect(d_monitorAction, SIGNAL( toggled(bool) ), _plottb, SLOT( setDisabled(bool) ));

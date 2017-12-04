@@ -353,7 +353,7 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
     d_curve->setData( new SpectrogramData(x_max, y_max) );
     d_curve->setRenderHint(QwtPlotItem::RenderAntialiased, false);
     //d_curve->setRenderThreadCount(2);
-    d_curve->setColorMap(new GISTEarthColorMap());
+    d_curve->setColorMap(new CubehelixColorMap());
     d_curve->attach(this);
 
     const QwtInterval zInterval = d_curve->data()->interval( Qt::ZAxis );
@@ -361,7 +361,7 @@ SpectroScatterPlot::SpectroScatterPlot(QWidget *parent, uint x_max, uint y_max):
     QwtScaleWidget *rightAxis = axisWidget(QwtPlot::yRight);
     rightAxis->setTitle("Counts");
     rightAxis->setColorBarEnabled(true);
-    rightAxis->setColorMap( zInterval, new GISTEarthColorMap());
+    rightAxis->setColorMap( zInterval, new CubehelixColorMap());
 
     setAxisScale(QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue() );
     enableAxis(QwtPlot::yRight);
@@ -686,34 +686,35 @@ void SpectroScatterPlot::setColorMap(int cm) {
     /* Based on index of combobox in specbox.cpp */
     switch(cm) {
     case 0: {
-        d_curve->setColorMap(new GISTEarthColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new GISTEarthColorMap(_cm_mode));
-        break;
-    }
-    case 1: {
-        d_curve->setColorMap(new GISTSternColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new GISTSternColorMap(_cm_mode));
-
-        break;
-    }
-    case 2: {
-        d_curve->setColorMap(new GISTHeatColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new GISTHeatColorMap(_cm_mode));
-
-        break;
-    }
-    case 3: {
         d_curve->setColorMap(new CubehelixColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new CubehelixColorMap(_cm_mode));
 
         break;
     }
-    case 4: {
-        d_curve->setColorMap(new SpectroColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new SpectroColorMap(_cm_mode));
+
+    case 1: {
+        d_curve->setColorMap(new GISTEarthColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new GISTEarthColorMap(_cm_mode));
+        break;
+    }
+    case 2: {
+        d_curve->setColorMap(new GISTSternColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new GISTSternColorMap(_cm_mode));
 
         break;
     }
+    case 3: {
+        d_curve->setColorMap(new GISTHeatColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new GISTHeatColorMap(_cm_mode));
+
+        break;
+    }
+    // case 4: {
+    //     d_curve->setColorMap(new SpectroColorMap(_cm_mode));
+    //     rightAxis->setColorMap(zInterval, new SpectroColorMap(_cm_mode));
+
+    //     break;
+    // }
     case 5: {
         d_curve->setColorMap(new GISTGrayColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new GISTGrayColorMap(_cm_mode));
@@ -726,39 +727,39 @@ void SpectroScatterPlot::setColorMap(int cm) {
 
         break;
     }
-    case 7: {
-        d_curve->setColorMap(new SpectralColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new SpectralColorMap(_cm_mode));
+    // case 7: {
+    //     d_curve->setColorMap(new SpectralColorMap(_cm_mode));
+    //     rightAxis->setColorMap(zInterval, new SpectralColorMap(_cm_mode));
 
-        break;
-    }
-    case 8: {
+    //     break;
+    // }
+    case 7: {
         d_curve->setColorMap(new SpectralTwoColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new SpectralTwoColorMap(_cm_mode));
 
         break;
     }
-    case 9: {
+    case 8: {
         d_curve->setColorMap(new BoneColorMap(_cm_mode));
         rightAxis->setColorMap(zInterval, new BoneColorMap(_cm_mode));
 
         break;
     }
-    case 10: {
-        d_curve->setColorMap(new IshiharaColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new IshiharaColorMap(_cm_mode));
+    // case 10: {
+    //     d_curve->setColorMap(new IshiharaColorMap(_cm_mode));
+    //     rightAxis->setColorMap(zInterval, new IshiharaColorMap(_cm_mode));
 
-        break;
-    }
-    case 11: {
-        d_curve->setColorMap(new BobbyColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new BobbyColorMap(_cm_mode));
+    //     break;
+    // }
+    // case 11: {
+    //     d_curve->setColorMap(new BobbyColorMap(_cm_mode));
+    //     rightAxis->setColorMap(zInterval, new BobbyColorMap(_cm_mode));
 
-        break;
-    }
+    //     break;
+    // }
     default: {
-        d_curve->setColorMap(new GISTEarthColorMap(_cm_mode));
-        rightAxis->setColorMap(zInterval, new GISTEarthColorMap(_cm_mode));
+        d_curve->setColorMap(new CubehelixColorMap(_cm_mode));
+        rightAxis->setColorMap(zInterval, new CubehelixColorMap(_cm_mode));
 
         break;
     }
