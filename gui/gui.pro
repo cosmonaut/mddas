@@ -36,6 +36,7 @@ HEADERS       = atomic.xpm \
                 specplotbox.h \
                 spectromonitorscatterplot.h \
                 spectroscatterplot.h \
+                superdata.h \
                 zoomer.h \
                 eye.xpm \
                 save.xpm \
@@ -59,7 +60,8 @@ SOURCES       = boxpicker.cpp \
                 specplot.cpp \
                 specplotbox.cpp \
                 spectromonitorscatterplot.cpp \
-                spectroscatterplot.cpp 
+                spectroscatterplot.cpp \
+                superdata.cpp
 
 
 

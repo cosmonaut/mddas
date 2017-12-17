@@ -6,6 +6,7 @@
 #include "mddasconfigdialog.h"
 #include "mddasplotconfig.h"
 #include "mddasdatapoint.h"
+#include "superdata.h"
 #include "specmonbox.h"
 #include "specbox.h"
 #include "histbox.h"
