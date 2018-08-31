@@ -292,6 +292,11 @@ SpectroMonitorScatterPlot::SpectroMonitorScatterPlot(QWidget *parent, uint x_max
 
     setCanvasBackground(QColor(0, 0, 0)); 
 
+    QFont f;
+    f.setPointSize(8);
+    setAxisFont(xBottom, f);
+    setAxisFont(yLeft, f);
+    
     setAxisScale(xBottom, 0, x_max);
     setAxisScale(yLeft, 0, y_max);
 

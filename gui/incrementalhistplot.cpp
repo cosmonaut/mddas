@@ -71,6 +71,11 @@ IncrementalHistPlot::IncrementalHistPlot(QWidget *parent, uint x_max, uint y_max
 
     setCanvasBackground(QColor(0, 0, 0));
 
+    QFont f;
+    f.setPointSize(8);
+    setAxisFont(xBottom, f);
+    setAxisFont(yLeft, f);
+    
     setAxisScale(xBottom, 0, _p_max);
     setAxisAutoScale(yLeft); // Autoscale hist data
 
